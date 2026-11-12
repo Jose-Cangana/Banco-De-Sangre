@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    ESTADO CENTRAL DE LA APLICACIÓN (solo en memoria del navegador)
    Todas las acciones mutan este objeto y disparan re-render +
    un asiento en el log de auditoría, simulando el
@@ -70,12 +70,13 @@ const MODO_SERVIDOR = (typeof window !== 'undefined' && window.PERSISTENCIA === 
 let clavesCargadas = [];
 
 /* Colecciones que se envian a la base (el resto se lee y no se edita aqui) */
-const COLECCIONES_GUARDABLES = ['usuarios','donantes','inventory','serologia','solicitudes','pruebas','hemovigilancia','intercambios'];
+const COLECCIONES_GUARDABLES = ['usuarios','donantes','inventory','serologia','pruebas','hemovigilancia','intercambios'];
 
 /* Novedades que solo se agregan (bitacora, alertas, despachos): se envian una
    vez y se vacian. */
 function colasVacias(){ return { auditNuevos: [], alertasNuevas: [], despachosNuevos: [] }; }
 let pendientes = colasVacias();
+const solicitudesPendientes = new Map();
 
 function leerLocal(){
   if (MODO_SERVIDOR) return {};
@@ -109,6 +110,10 @@ function enviarAlServidor(){
   clavesCargadas.forEach(clave => {
     if (COLECCIONES_GUARDABLES.includes(clave)) cambios[clave] = state[clave];
   });
+  if (solicitudesPendientes.size) {
+    cambios.solicitudes = [...solicitudesPendientes.values()];
+    solicitudesPendientes.clear();
+  }
   const cuerpo = JSON.stringify(cambios);
   colaEnvio = colaEnvio
     .then(() => fetch('/api/sincronizar', {
@@ -187,6 +192,9 @@ function formatoFecha(d){
   return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`;
 }
 function sumarDias(fecha, dias){ const d = new Date(fecha.getTime()); d.setDate(d.getDate() + dias); return d; }
+function textoSeguro(valor){
+  return String(valor ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function nombreDonante(dni){
   const d = state.donantes.find(x => x.dni === dni);
   return d ? d.nombre : null;
@@ -321,7 +329,7 @@ const quickAccessData = [
   ["Nueva solicitud de sangre","solicitudes"], ["Registrar un donante","donantes"],
   ["Etiquetar una unidad","etiquetado"], ["Despachar una unidad","despacho"],
   ["Ver el inventario","inventario"], ["Registrar una reacción","hemovigilancia"],
-  ["Pedir a otro hospital","interhospitalario"], ["Abrir la app móvil","movil"],
+  ["Pedir a otro hospital","interhospitalario"],
   ["Generar un reporte","reportes"], ["Administrar usuarios","administracion"],
   ["Revisar la auditoría","auditoria"],
 ];
@@ -344,7 +352,7 @@ function renderQuickAccess(){
   }).join('');
 }
 
-/* ---------------- Render + acciones: Inventario (RF-09, RF-10) ---------------- */
+/* ---------------- Render + acciones: Inventario ---------------- */
 function renderInventory(){
   const q = (document.getElementById('inv-search')?.value || '').trim().toLowerCase();
   const filter = document.getElementById('inv-filter')?.value || '';
@@ -460,8 +468,8 @@ function nombreArchivoInventario(){
 
 function descargarInventarioCSV(){
   const nombre = nombreArchivoInventario();
-  // El "﻿" es la marca que necesita Excel para respetar las tildes.
-  const blob = new Blob(['﻿' + window.csvInventario], { type: 'text/csv;charset=utf-8;' });
+  // El "" es la marca que necesita Excel para respetar las tildes.
+  const blob = new Blob(['' + window.csvInventario], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const enlace = document.createElement('a');
   enlace.href = url;
@@ -619,7 +627,7 @@ function cambiarEstadoUnidad(din, nuevoEstado){
   renderInventory();
 }
 
-/* Fraccionamiento (RF-06) */
+/* Fraccionamiento */
 function fillFractSelect(){
   const sel = document.getElementById('fract-din');
   if(!sel) return;
@@ -654,13 +662,13 @@ function fraccionarUnidad(){
   renderInventory();
 }
 
-/* ---------------- Donantes (RF-03, RF-04) ---------------- */
+/* ---------------- Donantes ---------------- */
 /* Un diferimiento temporal siempre lleva fecha de fin (campo diferimiento_hasta de la base). */
 const SIN_ANTECEDENTES = /^(ninguno|ninguna|ningun|no|no refiere|sin antecedentes|n\/a|niega)\.?$/i;
 function evaluarAntecedentes(texto){
   const t = String(texto || '').trim();
   if(!t || SIN_ANTECEDENTES.test(t)) return null;
-  const n = t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const n = t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if(/(conducta de riesgo|riesgo|vih|sida|hepatitis|sifilis|drogas|inyectable)/.test(n))
     return { motivo: 'Antecedente de conducta de riesgo declarado', tipo: 'Permanente', dias: 0 };
   if(/(viaje|malaria|endemic|dengue|zika|chagas|selva)/.test(n))
@@ -672,21 +680,36 @@ function evaluarAntecedentes(texto){
 }
 /* Evalúa peso, hemoglobina y antecedentes. Devuelve null si es apto, o { motivo, tipo, dias }. */
 function evaluarDonante(){
-  const peso = parseFloat(document.getElementById('don-peso').value);
-  const hb = parseFloat(document.getElementById('don-hb').value);
-  if(!isNaN(peso) && peso < 50) return { motivo: `Peso bajo el mínimo para donar (${peso} kg < 50 kg)`, tipo: 'Temporal', dias: 30 };
-  if(!isNaN(hb) && hb < 12.5) return { motivo: `Hemoglobina bajo el mínimo (${hb} g/dL < 12.5 g/dL)`, tipo: 'Temporal', dias: 30 };
+  const peso = Number(document.getElementById('don-peso').value.replace(',', '.'));
+  const altura = Number(document.getElementById('don-altura').value);
+  const hb = Number(document.getElementById('don-hb').value.replace(',', '.'));
+  if(peso > 0 && peso < 50) return { motivo: `Peso bajo el mínimo para donar (${peso} kg < 50 kg)`, tipo: 'Temporal', dias: 30 };
+  if(altura > 0 && altura < 150) return { motivo: `Talla bajo el mínimo de evaluación (${altura} cm < 150 cm)`, tipo: 'Temporal', dias: 30 };
+  if(peso >= 50 && altura >= 150){
+    const imc = peso / (altura / 100) ** 2;
+    if(imc < 18.5) return { motivo: `Relación peso/talla baja (IMC ${imc.toFixed(1)})`, tipo: 'Temporal', dias: 30 };
+    if(imc >= 40) return { motivo: `Relación peso/talla requiere evaluación clínica (IMC ${imc.toFixed(1)})`, tipo: 'Temporal', dias: 30 };
+  }
+  if(hb > 0 && hb < 12.5) return { motivo: `Hemoglobina bajo el mínimo (${hb} g/dL < 12.5 g/dL)`, tipo: 'Temporal', dias: 30 };
   return evaluarAntecedentes(document.getElementById('don-antecedentes').value);
 }
 function evaluarAptitud(){
   const pill = document.getElementById('aptitud-pill');
+  const peso = Number(document.getElementById('don-peso').value.replace(',', '.'));
+  const altura = Number(document.getElementById('don-altura').value);
+  const medidasValidas = peso >= 30 && peso <= 250 && altura >= 100 && altura <= 250;
+  const imc = medidasValidas ? new Intl.NumberFormat('es-PE',{maximumFractionDigits:1}).format(peso / (altura / 100) ** 2) : '';
+  const confirmado = document.getElementById('don-evaluado').checked;
   const ev = evaluarDonante();
   if(pill){
     if(ev){
       pill.className = 'pill ' + (ev.tipo === 'Permanente' ? 'red' : 'amber');
       pill.innerHTML = `<span class="dot"></span>Aptitud automática: ${ev.tipo === 'Permanente' ? 'EXCLUIDO' : 'DIFERIDO'} — ${ev.motivo}`;
     } else {
-      pill.className = 'pill green'; pill.innerHTML = `<span class="dot"></span>Evaluación: APTO para donar`;
+      pill.className = 'pill ' + (medidasValidas && confirmado ? 'green' : 'slate');
+      pill.textContent = medidasValidas
+        ? 'IMC: ' + imc + ' kg/m² · ' + (confirmado ? 'Evaluación confirmada por el profesional' : 'Pendiente de evaluación clínica')
+        : 'Completa el peso y la altura para calcular el IMC';
     }
   }
   return ev;
@@ -696,6 +719,17 @@ function evaluarAptitud(){
 function renderDonantes(){
   const body = document.getElementById('donantes-rows');
   if(!body) return;
+  document.querySelectorAll('#campanas-rows tr[data-meta]').forEach(fila => {
+    const meta = Number(fila.dataset.meta);
+    const campana = fila.cells[0].textContent.trim();
+    const captados = new Set(state.donantes.filter(d => d.campana === campana).map(d => d.dni)).size;
+    const avance = Math.round(100 * captados / meta);
+    while (fila.cells.length > 2) fila.deleteCell(-1);
+    fila.insertCell().textContent = meta;
+    fila.insertCell().textContent = captados;
+    fila.insertCell().innerHTML = `<div class="progress-track" aria-hidden="true"><div class="progress-fill"
+      style="width:${Math.min(avance, 100)}%; background:var(--green-700);"></div></div><small>${avance}%</small>`;
+  });
   const q = (document.getElementById('don-buscar')?.value || '').trim().toLowerCase();
   const filas = state.donantes.filter(d =>
     !q || d.nombre.toLowerCase().includes(q) || d.dni.includes(q));
@@ -708,12 +742,37 @@ function renderDonantes(){
       <td class="cell-muted">${d.tipo}</td>
       <td class="mono">${d.ultimaDonacion}</td>
       <td class="mono">${d.donaciones}</td>
-      <td>${pill(color, etiqueta)}</td>
-      <td>${color === 'green' ? `<button class="btn btn-ghost btn-sm" onclick="abrirModalDonacion('${d.dni}')">Registrar donación</button>` : ''}</td>
+      <td>${pill(color, etiqueta)}${color !== 'green'
+        ? `<div class="cell-muted">Motivo: ${textoSeguro(d.motivoDiferimiento?.trim() || 'Sin motivo registrado')}</div>`
+        : ''}</td>
+      <td>${color === 'green'
+        ? (motivoNoDonar(d) ? '<span class="cell-muted">Donación reciente</span>'
+          : `<button class="btn btn-ghost btn-sm" onclick="abrirModalDonacion('${d.dni}')">Registrar donación</button>`)
+        : `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); verMotivoDiferimiento('${d.dni}')">Ver motivo</button>`}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="8" class="cell-muted">Ningún donante coincide con la búsqueda.</td></tr>`;
   const total = document.getElementById('don-count');
   if(total) total.textContent = `${filas.length} de ${state.donantes.length} donantes registrados`;
+}
+
+function verMotivoDiferimiento(dni){
+  const d = state.donantes.find(x => x.dni === dni);
+  if(!d || d.estado.startsWith('green')) return;
+  const excluido = d.estado.startsWith('red');
+  const estado = excluido ? 'Excluido' : 'Diferido';
+  const tipo = d.tipoDiferimiento || (excluido ? 'Permanente' : 'Temporal');
+  const vigencia = d.vigenciaDiferimiento && d.vigenciaDiferimiento !== '—'
+    ? d.vigenciaDiferimiento : (excluido ? 'Exclusión permanente' : 'Sin fecha registrada');
+  openModal(`
+    <div class="modal-head"><div><div class="modal-title">Motivo de ${estado.toLowerCase()}</div>
+    <div class="card-desc">${textoSeguro(d.nombre)} · DNI ${textoSeguro(d.dni)}</div></div>
+    <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>${pill(excluido ? 'red' : 'amber', estado)} ${pill(excluido ? 'red' : 'amber', textoSeguro(tipo))}</div>
+      <div class="field"><label>Motivo registrado</label><div class="input" style="height:auto; min-height:52px;">${textoSeguro(d.motivoDiferimiento || 'Sin motivo registrado')}</div></div>
+      <div class="field"><label>Vigencia</label><div class="cell-muted">${textoSeguro(vigencia)}</div></div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:18px;"><button class="btn btn-primary btn-sm" onclick="closeModal()">Cerrar</button></div>`);
 }
 
 function registrarDonante(){
@@ -722,6 +781,7 @@ function registrarDonante(){
     ['don-dni','dni',{label:'DNI'}],
     ['don-fecnac','fechaNacimiento',{label:'Fecha de nacimiento'}],
     ['don-peso','peso',{label:'Peso'}],
+    ['don-altura','altura',{label:'Altura'}],
     ['don-hb','hemoglobina',{label:'Hemoglobina'}],
     ['don-telefono','telefono',{label:'Teléfono'}],
     ['don-correo','correoPersonal',{label:'Correo electrónico'}],
@@ -737,6 +797,10 @@ function registrarDonante(){
     return;
   }
   const ev = evaluarAptitud();
+  if (!ev && !document.getElementById('don-evaluado').checked) {
+    toast('Confirma la aptitud tras la evaluación clínica para registrar el donante como apto', true);
+    return;
+  }
   const motivo = ev ? ev.motivo : null;
   const donante = {
     nombre, dni,
@@ -746,13 +810,15 @@ function registrarDonante(){
     donaciones: 0,
     estado: !ev ? 'green:Apto' : ev.tipo === 'Permanente' ? 'red:Excluido' : 'amber:Diferido',
     fechaNacimiento: document.getElementById('don-fecnac').value.trim(),
-    pesoKg: parseFloat(document.getElementById('don-peso').value) || null,
+    pesoKg: Number(document.getElementById('don-peso').value.replace(',', '.')),
+    alturaCm: Number(document.getElementById('don-altura').value),
+    aptitudConfirmada: document.getElementById('don-evaluado').checked,
     antecedentes: document.getElementById('don-antecedentes').value.trim(),
     sexo: document.getElementById('don-sexo').value,
     telefono: document.getElementById('don-telefono').value.trim(),
     correo: document.getElementById('don-correo').value.trim(),
     direccion: document.getElementById('don-direccion').value.trim(),
-    hemoglobina: parseFloat(document.getElementById('don-hb').value) || null,
+    hemoglobina: Number(document.getElementById('don-hb').value.replace(',', '.')),
     campana: document.getElementById('don-campana').selectedOptions[0].textContent.replace(/^—\s*Ninguna.*$/, 'Donación directa'),
     consentimiento: true,
     motivoDiferimiento: motivo || null,
@@ -777,6 +843,9 @@ function registrarDonante(){
   });
   VAL.limpiar(['don-sexo','don-nombre','don-dni','don-fecnac','don-peso','don-hb','don-antecedentes','don-telefono','don-correo','don-direccion']);
   document.getElementById('don-consentimiento').checked = false;
+  document.getElementById('don-evaluado').checked = false;
+  document.getElementById('don-altura').value = '';
+  VAL.limpiar(['don-altura']);
   switchTab('donantes','donantes:registro');
 }
 
@@ -859,7 +928,7 @@ function renderDiferimientos(){
   }).join('');
 }
 
-/* ---------------- Serología (RF-07, RF-08) ----------------
+/* ---------------- Serología ----------------
    Cada marcador se digita dos veces por separado (Digitación 1 y 2).
    Solo se acepta el resultado si las dos coinciden; así un error de tipeo no
    deja pasar una unidad contaminada. Un resultado reactivo o indeterminado
@@ -909,15 +978,20 @@ function renderTamizajes(){
     if(!g){ g = { din: r.din, filas: [] }; grupos.push(g); }
     g.filas.push(r);
   });
-  body.innerHTML = grupos.length ? grupos.reverse().map(g => {
+  const busqueda = document.getElementById('tamizajes-buscar').value.trim().toLowerCase();
+  const visibles = grupos.reverse().map(g => {
     const unidad = state.inventory.find(u => u.din === g.din);
+    return { ...g, donante: g.filas[0].donanteNombre || nombreDonante(unidad?.donante) || 'Donante no vinculado' };
+  }).filter(g => !busqueda || [g.din, g.donante].some(valor => valor.toLowerCase().includes(busqueda)));
+  document.getElementById('tamizajes-total').textContent = `${visibles.length} de ${grupos.length} tamizajes registrados`;
+  body.innerHTML = visibles.length ? visibles.map(g => {
     const malos = g.filas.filter(r => r.resultado !== 'No reactivo');
-    const resultado = malos.length
-      ? pill('red', malos.map(r => `${r.marcador}: ${r.resultado}`).join(', '))
-      : pill('green', 'Conforme — todos no reactivos');
-    return `<tr><td class="mono">${g.din}</td><td class="cell-muted">${nombreDonante(unidad?.donante) || '—'}</td>
-      <td>${resultado}</td><td class="cell-muted">${g.filas[0].digitador}<div>${g.filas[0].fecha}</div></td></tr>`;
-  }).join('') : `<tr><td colspan="4" class="cell-muted">Todavía no se registran tamizajes.</td></tr>`;
+    const resultado = malos.length ? pill('red', 'Requiere revisión') : pill('green', 'Sin resultados reactivos registrados');
+    const marcadores = g.filas.map(r => `<li>${textoSeguro(r.marcador)}: ${textoSeguro(r.resultado)}</li>`).join('');
+    return `<tr><td class="mono">${textoSeguro(g.din)}</td><td class="cell-muted">${textoSeguro(g.donante)}</td>
+      <td>${resultado}<details><summary>Ver resultados (${g.filas.length})</summary><ul>${marcadores}</ul></details></td>
+      <td class="cell-muted">${textoSeguro(g.filas[0].digitador)}<div>${textoSeguro(g.filas[0].fecha)}</div></td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="cell-muted">${busqueda ? 'Ningún tamizaje coincide con la búsqueda.' : 'Todavía no se registran tamizajes.'}</td></tr>`;
 }
 function guardarSerologia(){
   const din = document.getElementById('serologia-din')?.value;
@@ -985,7 +1059,7 @@ function guardarSerologia(){
   alerta.innerHTML = mensajeAlerta;
 }
 
-/* ---------------- Etiquetado ISBT 128 (RF-05) ---------------- */
+/* ---------------- Etiquetado ISBT 128 ---------------- */
 function updateEtiquetaPreview(){
   const abo = document.getElementById('et-abo').value;
   const [code, nombre] = document.getElementById('et-producto').value.split('|');
@@ -1042,7 +1116,7 @@ function generarCertificado(){
   toast('Certificado de calidad generado con código QR');
 }
 
-/* ---------------- Solicitudes (RF-11, RF-12) ---------------- */
+/* ---------------- Solicitudes ---------------- */
 /* La fecha solo se pide cuando hace falta: si es una reserva para cirugía
    o si la prioridad es "Programada". Con Urgente o Diferible no aparece. */
 function requiereFechaSolicitud(){
@@ -1060,45 +1134,70 @@ function toggleTipoSolicitud(){
     VAL.limpiar(['sol-reserva-fecha']);
   }
 }
-/* Al completar la historia clinica, si el paciente ya tiene una solicitud previa
-   se rellenan solos su nombre y su DNI (y quedan bloqueados para no desalinear datos). */
-function autocompletarPaciente(){
-  const hc = (document.getElementById('sol-hc').value || '').trim().toUpperCase();
+function prepararBusquedaPaciente(){
+  const hc = document.getElementById('sol-hc');
   const dni = document.getElementById('sol-dni');
-  const nom = document.getElementById('sol-paciente');
-  if(!dni || !nom) return;
-  const previa = hc.length === 13
-    ? (state.pacientes || []).find(p => String(p.hc).toUpperCase() === hc && p.dni)
-    : null;
-  if(previa){
-    dni.value = previa.dni; nom.value = previa.nombre;
-    dni.readOnly = true; nom.readOnly = true;
-    VAL.limpiar(['sol-dni','sol-paciente']);
-  } else if(dni.readOnly){
-    dni.readOnly = false; nom.readOnly = false;
-    dni.value = ''; nom.value = '';
+  const nombre = document.getElementById('sol-paciente');
+  const estado = document.getElementById('sol-busqueda');
+  let consulta = 0;
+  async function buscar(){
+    const turno = ++consulta;
+    const valor = dni.value.trim();
+    pacienteVerificado = null;
+    nombre.value = '';
+    hc.value = '';
+    estado.textContent = '';
+    VAL.limpiar(['sol-hc','sol-paciente']);
+    if (!/^[0-9]{8}$/.test(valor)) return;
+    estado.textContent = 'Buscando paciente…';
+    try {
+      const respuesta = await fetch('/api/pacientes/buscar?identificador=' + encodeURIComponent(valor), {cache:'no-store'});
+      if (turno !== consulta || dni.value.trim() !== valor) return;
+      if (respuesta.status === 404) {estado.textContent = 'Paciente sin registro. Crea su historia clínica y vuelve a buscar.'; return;}
+      if (!respuesta.ok) throw new Error();
+      const paciente = await respuesta.json();
+      if (turno !== consulta || dni.value.trim() !== valor) return;
+      pacienteVerificado = paciente;
+      hc.value = paciente.hc;
+      dni.value = paciente.dni;
+      nombre.value = paciente.nombre;
+      hc.dispatchEvent(new Event('input', {bubbles:true}));
+      nombre.dispatchEvent(new Event('input', {bubbles:true}));
+      VAL.campo(dni, 'dni');
+      estado.textContent = 'Paciente encontrado';
+    } catch {
+      if (turno === consulta) estado.textContent = 'No se pudo consultar el registro. Reintenta la búsqueda.';
+    }
   }
+  nombre.readOnly = true;
+  hc.readOnly = true;
+  dni.addEventListener('input', buscar);
+  document.getElementById('sol-reintentar')?.addEventListener('click', buscar);
 }
-/* (Ya no se usa al enviar una solicitud: los pacientes se registran en su módulo.) */
-function recordarPaciente(hc, dni, nombre){
-  state.pacientes = (state.pacientes || []).filter(p => String(p.hc).toUpperCase() !== hc.toUpperCase());
-  state.pacientes.push({ hc: hc.toUpperCase(), dni, nombre });
-  const lista = document.getElementById('lista-pacientes');
-  if(lista && !lista.querySelector(`option[value="${hc.toUpperCase()}"]`)){
-    const op = document.createElement('option');
-    op.value = hc.toUpperCase(); op.label = `${nombre} · DNI ${dni}`;
-    lista.appendChild(op);
+let pacienteVerificado = null;
+
+function prepararActualizacionSolicitudes(){
+  let consultando = false;
+  async function actualizar(){
+    if (consultando || document.hidden || envioProgramado || solicitudesPendientes.size) return;
+    consultando = true;
+    try {
+      const previo = colaEnvio;
+      await previo;
+      const respuesta = await fetch('/api/listar/solicitudes', {cache:'no-store'});
+      if (!respuesta.ok) return;
+      const datos = await respuesta.json();
+      if (!Array.isArray(datos) || previo !== colaEnvio || envioProgramado || solicitudesPendientes.size) return;
+      if (JSON.stringify(datos) === JSON.stringify(state.solicitudes)) return;
+      state.solicitudes = datos;
+      renderSolicitudes();
+    } catch { /* Se reintenta en la siguiente consulta. */ }
+    finally { consultando = false; }
   }
-}
-function importarHIS(){
-  const pac = (state.pacientes || [])[0];
-  if(!pac){ toast('No hay pacientes registrados: registra primero al paciente en el módulo Pacientes', true); return; }
-  document.getElementById('sol-hc').value = pac.hc;
-  autocompletarPaciente();
-  document.getElementById('sol-cie10').value = 'K92.2 — Hemorragia digestiva alta';
-  document.getElementById('sol-componente').value = '2 unidades — Concentrado de Hematíes';
-  VAL.limpiar(['sol-paciente','sol-dni','sol-hc','sol-cie10','sol-componente']);
-  toast('Orden importada automáticamente desde el HIS/SIS hospitalario');
+  setInterval(actualizar, 5000);
+  window.addEventListener('focus', actualizar);
+  window.addEventListener('storage', event => {if (event.key === 'bancosangre_evento') actualizar();});
+  document.addEventListener('visibilitychange', actualizar);
 }
 function enviarSolicitud(){
   const tipo = document.getElementById('sol-tipo').value;
@@ -1113,13 +1212,13 @@ function enviarSolicitud(){
   ])) return;
   const paciente = document.getElementById('sol-paciente').value.trim();
   const hcEscrita = document.getElementById('sol-hc').value.trim().toUpperCase();
-  if(!(state.pacientes || []).some(p => String(p.hc).toUpperCase() === hcEscrita)){
+  if(pacienteVerificado?.hc !== hcEscrita || pacienteVerificado.dni !== document.getElementById('sol-dni').value.trim()){
     VAL.marcar(document.getElementById('sol-hc'), 'Esta historia clínica no está registrada');
     toast('Registra primero al paciente en el módulo Pacientes (todos sus datos son obligatorios)', true);
     return;
   }
   const req = {
-    id: siguienteIdSolicitud(),
+    id: 'SOL-' + new Date().getFullYear() + '-' + crypto.randomUUID().replace(/-/g, '').slice(0, 11),
     paciente,
     dni: document.getElementById('sol-dni').value.trim(),
     hc: document.getElementById('sol-hc').value.trim().toUpperCase(),
@@ -1131,27 +1230,21 @@ function enviarSolicitud(){
     estado: 'pendiente',
   };
   state.solicitudes.unshift(req);
-  if(req.dni) recordarPaciente(req.hc, req.dni, paciente);
+  solicitudesPendientes.set(req.id, req);
+  pacienteVerificado = null;
+  document.getElementById('sol-busqueda').textContent = '';
   logAudit(tipo==='reserva' ? `Registró reserva quirúrgica programada` : pideFecha ? `Registró solicitud transfusional programada` : `Registró solicitud transfusional`, `${req.id} · ${req.servicio}`);
   toast(`Solicitud ${req.id} enviada al Banco de Sangre`);
   pushAlert('blue', `Nueva solicitud — ${req.servicio}`, `${req.componente} · ${req.cie10} · ${paciente}`);
   document.getElementById('sol-paciente').value=''; document.getElementById('sol-hc').value='';
   const d = document.getElementById('sol-dni'); d.value=''; d.readOnly=false;
-  document.getElementById('sol-paciente').readOnly=false;
   document.getElementById('sol-cie10').value=''; document.getElementById('sol-componente').value='';
   document.getElementById('sol-reserva-fecha').value='';
   toggleTipoSolicitud();
   VAL.limpiar(['sol-paciente','sol-dni','sol-hc','sol-cie10','sol-componente','sol-reserva-fecha']);
   renderSolicitudes();
 }
-function siguienteIdSolicitud(){
-  // Continúa la numeración a partir de la solicitud más alta que exista
-  const mayor = state.solicitudes.reduce((m, r) => {
-    const n = parseInt(String(r.id).split('-').pop(), 10);
-    return isNaN(n) ? m : Math.max(m, n);
-  }, state.reqCounter);
-  return 'SOL-2026-' + String(mayor + 1).padStart(4, '0');
-}
+
 const ESTADOS_SOLICITUD = {
   pendiente:['amber','Pendiente'], compatible:['green','Compatible'], incompatible:['red','Incompatible']
 };
@@ -1165,7 +1258,7 @@ function renderSolicitudes(){
   body.innerHTML = state.solicitudes.length ? state.solicitudes.map(r=>{
     const prColor = r.prioridad.startsWith('Urgente') ? 'red' : r.prioridad==='Programada' ? 'blue' : 'slate';
     const [colE, txtE] = ESTADOS_SOLICITUD[r.estado] || ESTADOS_SOLICITUD.pendiente;
-    const tipoTag = r.reservaFecha ? `<div class="cell-muted">${r.tipo==='reserva' ? 'Reserva hasta' : 'Programada para el'} ${r.reservaFecha}</div>` : '';
+    const tipoTag = r.reservaFecha && r.reservaFecha !== '—' ? `<div class="cell-muted">${r.tipo==='reserva' ? 'Reserva hasta' : 'Programada para el'} ${r.reservaFecha}</div>` : '';
     const accion = puede && r.estado!=='compatible'
       ? `<button class="btn btn-ghost btn-sm" onclick="validarSolicitud('${r.id}')">${r.estado==='incompatible' ? 'Repetir pruebas' : 'Validar'}</button>` : '';
     return `<tr>
@@ -1267,6 +1360,7 @@ function validarCompatibilidad(){
       estado:`${ok ? 'green' : 'red'}:${etiqueta}`, validadoPor:por, fecha });
   });
   req.estado = todoOk ? 'compatible' : 'incompatible';
+  solicitudesPendientes.set(req.id, req);
   if(todoOk && unidad.status === 'disponible') unidad.status = 'reservado';
   logAudit(todoOk ? 'Validó compatibilidad cruzada — mayor, menor y RAI'
                   : 'Registró pruebas de compatibilidad con resultado incompatible', `${req.id} · ${din}`);
@@ -1285,7 +1379,7 @@ function switchTab(group, tabKey){
   if(tabBtn) tabBtn.click();
 }
 
-/* ---------------- Despacho (RF-13) ---------------- */
+/* ---------------- Despacho ---------------- */
 function fillDespachoContext(){ /* placeholder para futura sincronización con solicitudes */ }
 function escanearHemocomponente(){
   const candidatos = state.inventory.filter(u=>u.status==='disponible' || u.status==='reservado');
@@ -1300,6 +1394,7 @@ function escanearPulsera(){
   const req = state.solicitudes[0];
   const hc = req ? req.hc : `HC-2026-${Math.floor(Math.random()*90000+10000)}`;
   state.despachoScan.hc = hc;
+  state.despachoScan.medico = req?.medico;
   state.despachoScan.paciente = req ? req.paciente : 'Paciente sin solicitud vinculada';
   document.getElementById('scan-hc').textContent = hc;
   toast(`Pulsera escaneada: ${hc}`);
@@ -1319,34 +1414,39 @@ function evaluarVerificacion(){
   box.innerHTML = `
     <div class="match-row ${bloqueada?'mismatch':''}"><span>Estado de la unidad</span><strong>${statusMeta[u.status][1]}</strong></div>
     <div class="match-row"><span>Grupo ABO/Rh</span><strong>${u.abo}</strong></div>
-    <div class="match-row"><span>N° de historia clínica</span><strong>${hc}</strong></div>
+    <div class="match-row"><span>Médico solicitante</span><strong data-medico-solicitante></strong></div>
     <div class="match-row"><span>Vigencia de la unidad</span><strong>${u.exp}</strong></div>
   `;
+  box.querySelector('[data-medico-solicitante]').textContent = state.despachoScan.medico || 'Sin médico vinculado';
   if(bloqueada){
     btn.disabled = true; btn.style.opacity = .5;
     toast(`La unidad ${din} está ${statusMeta[u.status][1].toLowerCase()} y no puede despacharse`, true);
     return;
   }
   const firmaOk = document.getElementById('despacho-firma')?.checked;
-  btn.disabled = !firmaOk; btn.style.opacity = firmaOk ? 1 : .5;
+  const receptorOk = document.getElementById('despacho-receptor').checkValidity();
+  btn.disabled = !(firmaOk && receptorOk);
+  btn.style.opacity = btn.disabled ? .5 : 1;
 }
 function autorizarDespacho(){
   const { din, hc, paciente } = state.despachoScan;
   const u = state.inventory.find(x=>x.din===din);
-  if(!u) return;
+  const receptor = document.getElementById('despacho-receptor');
+  if(!u || !hc || !document.getElementById('despacho-firma').checked || !receptor.reportValidity()) return;
   u.status = 'despachado';
-  pendientes.despachosNuevos.push({ din, hc });
+  pendientes.despachosNuevos.push({ din, hc, receptorId: receptor.value });
   logAudit(`Autorizó despacho tras doble verificación electrónica y firma electrónica`, `DIN ${din} → ${hc}`);
   toast(`Entrega registrada: ${din} → ${paciente || hc}`);
   state.despachoScan = { din:null, hc:null };
   document.getElementById('scan-din').textContent = '—';
   document.getElementById('scan-hc').textContent = '—';
   document.getElementById('despacho-firma').checked = false;
+  receptor.value = '';
   renderInventory();
   evaluarVerificacion();
 }
 
-/* ---------------- Hemovigilancia (RF-15) ---------------- */
+/* ---------------- Hemovigilancia ---------------- */
 function renderHemovigilancia(){
   document.getElementById('hemovigilancia-rows').innerHTML = state.hemovigilancia.map(e=>{
     const [sColor,sLabel] = e.severidad.split(':');
@@ -1363,7 +1463,9 @@ function abrirModalHemovigilancia(){
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div style="display:flex; flex-direction:column; gap:12px;">
-      <div class="field"><label>Paciente</label><input class="input" id="hv-paciente" data-val="nombre" data-req="1" maxlength="60" autocomplete="off" placeholder="Nombres y apellidos"></div>
+      <div class="field"><label>DNI del paciente</label><input class="input mono" id="hv-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="8 dígitos"><div class="field-hint" id="hv-busqueda" aria-live="polite"></div></div>
+      <div class="field"><label>Paciente</label><input class="input" id="hv-paciente" data-val="nombre" data-req="1" readonly placeholder="Se completa con el DNI"></div>
+      <div class="field"><label>Historia clínica</label><input class="input mono" id="hv-hc" readonly placeholder="Se completa con el DNI"></div>
       <div class="field"><label>DIN origen</label><select class="input mono" id="hv-din">${dinOptions}</select></div>
       <div class="field"><label>Reacción observada</label><input class="input" id="hv-reaccion" data-val="texto" data-req="1" data-min="4" data-max="100" maxlength="100" autocomplete="off" placeholder="Ej. Reacción febril no hemolítica"></div>
       <div class="field"><label>Severidad</label>
@@ -1372,21 +1474,66 @@ function abrirModalHemovigilancia(){
     </div>
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:18px;">
       <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="guardarEventoHemovigilancia()">Registrar evento</button>
+      <button class="btn btn-primary btn-sm" id="hv-registrar" onclick="guardarEventoHemovigilancia()" disabled>Registrar evento</button>
     </div>
   `);
+  configurarPacienteHemovigilancia();
+}
+function configurarPacienteHemovigilancia(){
+  const dni = document.getElementById('hv-dni');
+  const paciente = document.getElementById('hv-paciente');
+  const hc = document.getElementById('hv-hc');
+  const estado = document.getElementById('hv-busqueda');
+  const boton = document.getElementById('hv-registrar');
+  let consulta = 0;
+  dni.addEventListener('input', async () => {
+    const actual = ++consulta;
+    paciente.value = '';
+    hc.value = '';
+    delete dni.dataset.pacienteEncontrado;
+    boton.disabled = true;
+    estado.textContent = '';
+    estado.className = 'field-hint';
+    if(!/^\d{8}$/.test(dni.value)) return;
+    estado.textContent = 'Buscando paciente…';
+    try {
+      const respuesta = await fetch('/api/pacientes/buscar?identificador=' + encodeURIComponent(dni.value), {headers:{Accept:'application/json'}});
+      if(actual !== consulta) return;
+      if(respuesta.status === 404) throw new Error('El DNI no tiene una historia clínica registrada');
+      if(!respuesta.ok) throw new Error('No se pudo consultar al paciente');
+      const datos = await respuesta.json();
+      paciente.value = datos.nombre || '';
+      hc.value = datos.hc || '';
+      dni.dataset.pacienteEncontrado = '1';
+      estado.textContent = 'Paciente encontrado';
+      estado.className = 'field-hint reniec-ok';
+      boton.disabled = false;
+      paciente.dispatchEvent(new Event('input', {bubbles:true}));
+    } catch(error) {
+      if(actual !== consulta) return;
+      estado.textContent = error.message;
+      estado.className = 'field-hint reniec-error';
+    }
+  });
 }
 function guardarEventoHemovigilancia(){
   const dinSel = document.getElementById('hv-din').value;
   if(!dinSel){ toast('No hay unidades despachadas: no se puede asociar el evento a una donación', true); return; }
   if(!VAL.formulario([
+    ['hv-dni','dni',{label:'DNI del paciente'}],
     ['hv-paciente','nombre',{label:'Paciente'}],
     ['hv-reaccion','texto',{label:'Reacción observada'}]
   ])) return;
+  if(document.getElementById('hv-dni').dataset.pacienteEncontrado !== '1'){
+    toast('Primero ingresa el DNI de un paciente con historia clínica registrada', true);
+    return;
+  }
   const paciente = document.getElementById('hv-paciente').value.trim();
   const evento = {
     id: nuevoId(),
     fecha: nowStr().split(' ')[0], paciente,
+    dniPaciente: document.getElementById('hv-dni').value,
+    hc: document.getElementById('hv-hc').value,
     din: dinSel,
     reaccion: document.getElementById('hv-reaccion').value.trim(),
     severidad: document.getElementById('hv-severidad').value,
@@ -1399,13 +1546,16 @@ function guardarEventoHemovigilancia(){
   renderHemovigilancia();
 }
 
-/* ---------------- Reportes (RF-16) ---------------- */
+/* ---------------- Reportes ---------------- */
 const reportsData = [
+  ["Listado general de donantes","Listado general con estado de aptitud y grupo sanguíneo (RPT-01)","PRONAHEBAS"],
+  ["Solicitudes transfusionales","Histórico de solicitudes por periodo y prioridad (RPT-02)","DIGDOT"],
+  ["Unidades por vencer (FEFO)","Unidades próximas a caducar o vencidas (RPT-03)","MINSA"],
   ["Reporte operacional mensual","Movimientos de inventario, captación y despacho","PRONAHEBAS"],
   ["Reporte epidemiológico","Prevalencia de marcadores serológicos reactivos","DIGDOT"],
   ["Unidades perdidas y vencidas","Unidades que vencieron o se descartaron","MINSA"],
   ["Auditoría de hemovigilancia","Eventos adversos transfusionales del periodo","PRONAHEBAS"],
-  ["Reporte normativo automático","Generación periódica programada para MINSA","PRONAHEBAS"],
+  ["Reporte normativo","Resumen mensual de la actividad auditada","PRONAHEBAS"],
   ["Datos para investigación","Exportación sin datos que identifiquen a las personas","MINSA"],
 ];
 function renderReports(){
@@ -1440,6 +1590,24 @@ function filasDesdeConteo(conteo, total){
 }
 
 const generadoresDeReporte = {
+  'Listado general de donantes': () => ({
+    columnas: ['DNI', 'Donante', 'Grupo', 'Tipo', 'Estado'],
+    filas: state.donantes.map(d => [d.dni, d.nombre, d.abo, d.tipo, (d.estado || '').split(':')[1] || d.estado]),
+    resumen: `${state.donantes.length} donantes registrados en el sistema`,
+  }),
+  'Solicitudes transfusionales': () => ({
+    columnas: ['Código', 'Paciente', 'Servicio', 'Prioridad', 'Estado'],
+    filas: state.solicitudes.map(s => [s.id || s.codigo, s.paciente, s.servicio, s.prioridad, s.estado]),
+    resumen: `${state.solicitudes.length} solicitudes registradas`,
+  }),
+  'Unidades por vencer (FEFO)': () => {
+    const perdidas = state.inventory.filter(u => u.status === 'vencido' || u.status === 'cuarentena' || u.status === 'disponible');
+    return {
+      columnas: ['Código DIN', 'Hemocomponente', 'Vence', 'Estado'],
+      filas: perdidas.map(u => [u.din, u.producto, u.exp, statusMeta[u.status] ? statusMeta[u.status][1] : u.status]),
+      resumen: `${perdidas.length} unidades evaluadas bajo criterio FEFO`,
+    };
+  },
   'Reporte operacional mensual': () => {
     const inv = state.inventory;
     const estados = contarPor(inv, 'status');
@@ -1481,7 +1649,7 @@ const generadoresDeReporte = {
     resumen: `${state.hemovigilancia.length} eventos registrados · ` +
       `${state.hemovigilancia.filter(e => e.severidad.startsWith('red')).length} de severidad grave`,
   }),
-  'Reporte normativo automático': () => {
+  'Reporte normativo': () => {
     const acciones = contarPor(state.auditLog, fila => fila[1]);
     return {
       columnas: ['Usuario responsable', 'Acciones registradas', 'Participación'],
@@ -1500,12 +1668,51 @@ const generadoresDeReporte = {
 };
 
 function generarReporte(title, formato){
+  if (formato === 'Excel' && MODO_SERVIDOR) {
+    const rutas = {
+      'Listado general de donantes': 'donantes', 'Solicitudes transfusionales': 'solicitudes',
+      'Unidades por vencer (FEFO)': 'unidades-vencer', 'Reporte operacional mensual': 'operacional-mensual',
+      'Reporte epidemiológico': 'epidemiologico', 'Unidades perdidas y vencidas': 'unidades-perdidas',
+      'Auditoría de hemovigilancia': 'hemovigilancia', 'Reporte normativo': 'normativo',
+      'Datos para investigación': 'investigacion'
+    };
+    if (rutas[title]) {
+      window.open('/api/reportes/excel/' + rutas[title] + '.xlsx', '_blank');
+      return;
+    }
+  }
+  if(formato === 'PDF'){
+    const complementario = {
+      'Reporte operacional mensual': 'operacional-mensual',
+      'Reporte epidemiológico': 'epidemiologico',
+      'Unidades perdidas y vencidas': 'unidades-perdidas',
+      'Auditoría de hemovigilancia': 'hemovigilancia',
+      'Reporte normativo': 'normativo',
+      'Datos para investigación': 'investigacion',
+    }[title];
+    if (complementario) {
+      window.open('/api/reportes/complementarios/' + complementario + '.pdf', '_blank');
+      return;
+    }
+    if(title === 'Listado general de donantes'){
+      window.open('/api/reportes/donantes.pdf', '_blank');
+      return;
+    }
+    if(title === 'Solicitudes transfusionales'){
+      window.open('/api/reportes/solicitudes.pdf', '_blank');
+      return;
+    }
+    if(title === 'Unidades por vencer (FEFO)'){
+      window.open('/api/reportes/unidades-vencer.pdf', '_blank');
+      return;
+    }
+  }
   const generador = generadoresDeReporte[title];
   if(!generador){ toast('Ese reporte todavía no está disponible', true); return; }
   const reporte = generador();
   const fecha = nowStr();
   const entidad = (reportsData.find(r => r[0] === title) || [,, 'MINSA'])[2];
-  const codigo = 'RPT-' + String(Math.floor(Math.random() * 9000) + 1000) + '-2026';
+  const codigo = 'RPT-' + String(reportsData.findIndex(r => r[0] === title) + 1).padStart(2, '0');
   window.reporteActual = { title, fecha, entidad, codigo, ...reporte };
   logAudit(`Generó el reporte "${title}" en formato ${formato}`, `${reporte.filas.length} filas`);
 
@@ -1514,7 +1721,7 @@ function generarReporte(title, formato){
   // Vista del documento, con la forma de un reporte oficial impreso
   const cuerpo = reporte.filas.length
     ? reporte.filas.map(fila => `<tr>${fila.map((c, i) =>
-        i === 0 ? `<td class="cell-strong">${c}</td>` : `<td class="mono">${c}</td>`).join('')}</tr>`).join('')
+        `<td class="${i === 0 ? 'cell-strong' : ''}">${textoSeguro(c ?? '—')}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${reporte.columnas.length}" class="cell-muted">Sin datos en el periodo</td></tr>`;
 
   openModal(`
@@ -1526,28 +1733,20 @@ function generarReporte(title, formato){
     <div class="doc-reporte">
       <div class="doc-membrete">
         <div>
-          <div class="doc-institucion">Hospital de Lima Este Vitarte</div>
-          <div class="doc-area">Servicio de Hemoterapia y Banco de Sangre — Tipo II</div>
+          <div class="doc-institucion">BancoSangre HLEV</div>
+          <div class="doc-area">Hospital de Lima Este Vitarte · Banco de Sangre Tipo II · Estándar ISBT 128</div>
         </div>
-        <div class="doc-codigo">${codigo}</div>
+        <div class="doc-codigo"><div>${codigo}</div><strong>${fecha}</strong><div>Generado por: ${textoSeguro(state.currentUser)}</div></div>
       </div>
       <h2 class="doc-titulo">${title}</h2>
       <div class="doc-datos">
         <div><span>Dirigido a</span><strong>${entidad}</strong></div>
-        <div><span>Fecha de emisión</span><strong>${fecha}</strong></div>
-        <div><span>Responsable</span><strong>${state.currentUser}</strong></div>
-        <div><span>Cargo</span><strong>${state.currentRole}</strong></div>
       </div>
       <p class="doc-resumen"><strong>Resumen:</strong> ${reporte.resumen}</p>
       <table>
         <thead><tr>${reporte.columnas.map(c => `<th>${c}</th>`).join('')}</tr></thead>
         <tbody>${cuerpo}</tbody>
       </table>
-      <div class="doc-firma">
-        <div class="doc-linea"></div>
-        <div>${state.currentUser}</div>
-        <div class="doc-cargo">${state.currentRole} · Hospital de Lima Este Vitarte</div>
-      </div>
     </div>
     <div class="no-print" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;">
       <button class="btn btn-primary btn-sm" onclick="imprimirReporte()">Imprimir o guardar en PDF</button>
@@ -1574,7 +1773,7 @@ function descargarReporte(){
     .map(fila => fila.map(celda => `"${String(celda).replace(/"/g, '""')}"`).join(';'))
     .join('\r\n');
   const nombre = r.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.csv';
-  const blob = new Blob(['﻿' + window.csvInventario], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['' + window.csvInventario], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const enlace = document.createElement('a');
   enlace.href = url; enlace.download = nombre;
@@ -1585,15 +1784,16 @@ function descargarReporte(){
   closeModal();
 }
 
-/* ---------------- Auditoría (RF-17) ---------------- */
+/* ---------------- Auditoría ---------------- */
 function renderAudit(){
   document.getElementById('audit-rows').innerHTML = state.auditLog.slice(0,50).map(([ts,user,action,resource,ip])=>{
     return `<tr><td class="mono">${ts}</td><td class="cell-strong">${user}</td><td class="cell-muted">${action}</td><td class="mono">${resource}</td><td class="mono">${ip}</td></tr>`;
   }).join('');
 }
 
-/* ---------------- RF-23 Monitoreo de temperatura ---------------- */
+/* ----------------  Monitoreo de temperatura ---------------- */
 state.temps = [];
+let camara3dSeleccionada = 0;
 function renderTemps(){
   const el = document.getElementById('temp-grid');
   if(!el) return;
@@ -1606,7 +1806,55 @@ function renderTemps(){
     </div>`).join('');
 }
 
-/* ---------------- RF-18/19/40/45 Red interhospitalaria ---------------- */
+function seleccionarCamara3D(indice){
+  camara3dSeleccionada = indice;
+  renderCamaras3D();
+}
+
+function renderCamaras3D(){
+  const lista = document.getElementById('camara3d-lista');
+  const detalle = document.getElementById('camara3d-detalle');
+  if(!lista || !detalle) return;
+  if(!state.temps.length){
+    lista.innerHTML = '';
+    detalle.innerHTML = '<div class="cold-chain-empty">No hay lecturas de cámaras registradas.</div>';
+    return;
+  }
+  camara3dSeleccionada = Math.min(camara3dSeleccionada, state.temps.length - 1);
+  lista.innerHTML = state.temps.map((t,i)=>`
+    <button type="button" class="camara3d-option ${i===camara3dSeleccionada?'active':''} ${t.ok?'':'alarm'}"
+            role="option" aria-selected="${i===camara3dSeleccionada}" onclick="seleccionarCamara3D(${i})">
+      <span class="camara3d-option-dot"></span>
+      <span><strong>${textoSeguro(t.camara)}</strong><small>${t.actual}°C · ${t.ok?'Dentro de rango':'Requiere atención'}</small></span>
+    </button>`).join('');
+
+  const t = state.temps[camara3dSeleccionada];
+  const unidades = state.inventory.filter(u => u.camara === (t.etiqueta || t.camara) && !['despachado','incinerado','fraccionado'].includes(u.status));
+  const slots = Math.min(9, unidades.length);
+  const bolsas = Array.from({length:slots},(_,i)=>{
+    const u = unidades[i];
+    const color = /plasma|plaqueta|crio/i.test(u.producto) ? 'plasma' : 'hematies';
+    return `<span class="cold-bag occupied ${color}" title="${textoSeguro(u.din+' · '+u.producto+' · '+u.abo)}"><strong>${textoSeguro(u.abo)}</strong><small>${textoSeguro(u.producto)}</small></span>`;
+  }).join('');
+  detalle.innerHTML = `
+    <div class="camara3d-scene ${t.ok?'':'alarm'}">
+      <div class="cold-cabinet">
+        <div class="cold-cabinet-top"><span>${textoSeguro(t.camara)}</span><i>${t.ok?'Estable':'Alarma'}</i></div>
+        <div class="cold-cabinet-body">
+          <div class="cold-cabinet-shelves">${bolsas || '<span class="cold-chain-empty">Sin hemocomponentes almacenados</span>'}</div>
+          <div class="cold-cabinet-sensor"><strong>${t.actual}°C</strong><span>Rango ${textoSeguro(t.rango)}</span></div>
+        </div>
+        <div class="cold-cabinet-base"></div>
+      </div>
+    </div>
+    <div class="cold-chain-reading">
+      <div><span>Estado térmico</span><strong class="${t.ok?'ok':'alarm'}">${t.ok?'Operación estable':'Fuera de rango'}</strong></div>
+      <div><span>Unidades almacenadas</span><strong>${unidades.length}</strong></div>
+      <div><span>Lectura actual</span><strong>${t.actual}°C</strong></div>
+    </div>`;
+}
+
+/* ----------------  Red interhospitalaria ---------------- */
 state.establecimientos = [];
 function renderConvenios(){
   const body = document.getElementById('convenios-rows');
@@ -1722,15 +1970,7 @@ function devolverIntercambio(i){
   renderIntercambios();
 }
 
-/* ---------------- RF-20/21 App móvil ---------------- */
-function simularPushMovil(){
-  pushAlert('blue', 'Notificación push enviada', 'Personal asistencial notificado desde app móvil');
-  logAudit('Envió notificación push a la aplicación móvil', 'App móvil');
-  toast('Notificación push simulada enviada al personal');
-}
-
-
-/* ---------------- Administración: Usuarios (RF-26) ---------------- */
+/* ---------------- Administración: Usuarios ---------------- */
 state.usuarios = [];
 function renderUsuarios(){
   const body = document.getElementById('usuarios-rows');
@@ -1774,6 +2014,31 @@ function abrirModalUsuario(){
       <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="guardarUsuario()">Crear cuenta</button>
     </div>`);
+  prepararReniecUsuario();
+}
+
+function prepararReniecUsuario(){
+  const dni = document.getElementById('us-dni');
+  const nombre = document.getElementById('us-nombre');
+  let consulta = 0;
+  dni.addEventListener('input', async () => {
+    const turno = ++consulta;
+    if(nombre.dataset.reniec === '1'){
+      nombre.value = ''; nombre.readOnly = false; delete nombre.dataset.reniec;
+      VAL.limpiar(['us-nombre']);
+    }
+    if(!/^\d{8}$/.test(dni.value)) return;
+    try{
+      const respuesta = await fetch('/api/reniec/' + dni.value, {headers:{Accept:'application/json'}});
+      const datos = await respuesta.json();
+      if(turno !== consulta || !respuesta.ok) return;
+      nombre.value = datos.nombre;
+      nombre.dataset.reniec = '1';
+      nombre.readOnly = true;
+      nombre.dispatchEvent(new Event('input', {bubbles:true}));
+      toast('DNI verificado con RENIEC');
+    }catch{ toast('No se pudo consultar RENIEC', true); }
+  });
 }
 
 function guardarUsuario(){

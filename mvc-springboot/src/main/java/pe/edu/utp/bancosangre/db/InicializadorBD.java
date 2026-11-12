@@ -20,7 +20,7 @@ import java.sql.Statement;
 @Component
 public class InicializadorBD implements ApplicationRunner {
 
-    private static final String[] SCRIPTS = {"db/esquema.sql", "db/funciones.sql", "db/datos.sql"};
+    private static final String[] SCRIPTS = {"db/esquema.sql", "db/funciones.sql", "db/datos.sql", "db/usuarios_default.sql"};
 
     private final DataSource dataSource;
     private final BancoSangreService servicio;
@@ -49,6 +49,7 @@ public class InicializadorBD implements ApplicationRunner {
     public void restablecer() throws Exception {
         servicio.vaciar();
         ejecutar("db/datos.sql");
+        ejecutar("db/usuarios_default.sql");
     }
 
     private void ejecutar(String recurso) throws Exception {

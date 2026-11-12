@@ -66,6 +66,7 @@ public class AuthController {
             return "login";
         }
         String correo = String.valueOf(cuenta.get("correo"));
+        session.setMaxInactiveInterval(30 * 60);
         session.setAttribute(SESSION_ROL, Rol.desdeEtiqueta(String.valueOf(cuenta.get("rol"))));
         session.setAttribute(SESSION_USUARIO, correo);
         try { servicio.registrarAcceso(correo); } catch (Exception ignorada) { /* el acceso no debe fallar por esto */ }

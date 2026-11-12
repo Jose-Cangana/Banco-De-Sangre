@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(titulo=${info.titulo()})}"></head>
 <body>
@@ -12,7 +12,6 @@
         <div data-tabpanel="sol:nueva" class="card">
           <div class="card-title-row"><div><div class="card-title">Nueva solicitud de sangre</div>
           <div class="card-desc">UCI · Emergencia · Centro Quirúrgico · Gineco-Obstetricia</div></div>
-          <button class="btn btn-ghost btn-sm" onclick="importarHIS()">Importar orden desde HIS/SIS</button>
           </div>
           <div class="field" style="max-width:280px; margin-bottom:14px;">
             <label>Tipo de solicitud</label>
@@ -22,12 +21,13 @@
             </select>
           </div>
           <div class="grid-2" style="margin-bottom:14px;">
-            <div class="field"><label>Paciente</label><input class="input" id="sol-paciente" data-val="nombre" data-req="1" maxlength="60" autocomplete="off" placeholder="Nombres y apellidos del receptor"></div>
-            <div class="field"><label>Historia clínica</label><input class="input mono" id="sol-hc" list="lista-pacientes" data-val="hc" data-req="1" oninput="autocompletarPaciente()" onchange="autocompletarPaciente()" maxlength="13" autocomplete="off" placeholder="Elige o escribe: HC-2026-00000">
-              <datalist id="lista-pacientes">
-                <option th:each="p : ${pacientes}" th:value="${p['hc']}" th:label="${p['nombre'] + ' · DNI ' + p['dni']}"></option>
-              </datalist></div>
-            <div class="field"><label>DNI del paciente</label><input class="input mono" id="sol-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Se completa solo si la historia clínica ya existe"></div>
+            <div class="field"><label>DNI del paciente</label><input class="input mono" id="sol-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Escribe 8 dígitos para buscar"></div>
+            <div class="field"><label>Paciente</label><input class="input" id="sol-paciente" data-val="nombre" data-req="1" maxlength="60" autocomplete="off" readonly placeholder="Se completa al encontrar al paciente"></div>
+            <div class="field"><label>Historia clínica</label><input class="input mono" id="sol-hc" data-val="hc" data-req="1" maxlength="13" autocomplete="off" readonly placeholder="Se completa con el DNI">
+              <span id="sol-busqueda" class="cell-muted" role="status"></span>
+              <button type="button" class="btn btn-ghost btn-sm" id="sol-reintentar">Buscar paciente</button>
+              <a th:href="@{/pacientes(nuevo=true)}" target="_blank" rel="noopener">Crear historia clínica en otra pestaña</a>
+            </div>
             <div class="field"><label>Servicio solicitante</label>
               <select class="input" id="sol-servicio"><option>Emergencia</option><option>UCI</option><option>Centro Quirúrgico</option><option>Gineco-Obstetricia</option></select>
             </div>
@@ -44,7 +44,10 @@
           <div style="display:flex; justify-content:flex-end;"><button class="btn btn-primary btn-sm" onclick="enviarSolicitud()">Enviar solicitud</button></div>
 
           <div class="divider" style="margin:20px 0;"></div>
-          <div class="card-title" style="margin-bottom:10px;">Solicitudes activas</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div class="card-title" style="margin-bottom:0;">Solicitudes activas</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="window.open('/api/reportes/solicitudes.pdf', '_blank')" title="Reporte oficial de solicitudes transfusionales">Reporte PDF</button>
+          </div>
           <table>
             <thead><tr><th>Paciente</th><th>Servicio</th><th>CIE-10</th><th>Prioridad</th><th>Estado</th><th></th></tr></thead>
             <tbody id="solicitudes-rows"></tbody>
@@ -88,12 +91,13 @@
 
   <script th:inline="javascript">
     state.solicitudes = /*[[${solicitudes}]]*/ [];
-    state.pacientes = /*[[${pacientes}]]*/ [];
     state.pruebas = /*[[${pruebas}]]*/ [];
     state.inventory = /*[[${inventario}]]*/ [];
     sincronizarLocal('solicitudes', 'pruebas', 'inventory');
     document.addEventListener('DOMContentLoaded', function() {
       renderSolicitudes();
+      prepararBusquedaPaciente();
+      prepararActualizacionSolicitudes();
     });
   </script>
 </body>

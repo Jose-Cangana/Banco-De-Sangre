@@ -20,6 +20,12 @@ const VAL = (function () {
 
   /** "dd/mm/aaaa" -> Date si es una fecha real del calendario; si no, null */
   function fechaReal(txt) {
+    const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(txt || '');
+    if (iso) {
+      const y = +iso[1], mo = +iso[2], d = +iso[3];
+      const f = new Date(y, mo - 1, d);
+      return f.getFullYear() === y && f.getMonth() === mo - 1 && f.getDate() === d && y >= 1900 ? f : null;
+    }
     const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(txt || '');
     if (!m) return null;
     const d = +m[1], mo = +m[2], y = +m[3];
@@ -71,6 +77,19 @@ const VAL = (function () {
         return o;
       },
       check: v => fechaReal(v) ? true : 'Escribe una fecha válida con el formato dd/mm/aaaa',
+    },
+    altura: {
+      permite: /^\d$/,
+      mask: v => v.replace(/\D/g, '').slice(0, 3),
+      check: v => (/^\d{3}$/.test(v) && Number(v) >= 100 && Number(v) <= 250) || 'Ingresa una altura entre 100 y 250 cm',
+    },
+    fechaNacimientoPaciente: {
+      permite: /^\d$/,
+      mask: (v, el, ev) => el && el.type === 'date' ? v : tipos.fecha.mask(v, el, ev),
+      check: v => {
+        const date = fechaReal(v);
+        return (date && date <= hoy()) || 'Ingresa una fecha de nacimiento válida que no sea futura';
+      },
     },
     fechaNacimiento: {
       permite: /^\d$/,
@@ -208,6 +227,7 @@ const VAL = (function () {
   /* ---------- mensajes y marcas visuales ---------- */
   function marcar(el, msg) {
     el.classList.toggle('input-error', !!msg);
+    el.classList.toggle('input-valid', !msg && !!(el.value || '').trim());
     el.setAttribute('aria-invalid', msg ? 'true' : 'false');
     let aviso = el.parentElement && el.parentElement.querySelector('.field-error[data-for="' + (el.id || el.name) + '"]');
     if (msg) {
@@ -288,7 +308,7 @@ const VAL = (function () {
     const t = tipo && tipos[tipo];
     if (!t || typeof el.value !== 'string') return;
     const antes = el.value;
-    const despues = t.mask(antes, el, e);
+    const despues = t.mask ? t.mask(antes, el, e) : antes;
     if (despues !== antes) {
       const pos = el.selectionStart;
       el.value = despues;
@@ -298,7 +318,12 @@ const VAL = (function () {
         el.setSelectionRange(nueva, nueva);
       } catch (err) { /* el tipo de campo no permite cursor */ }
     }
-    if (el.classList.contains('input-error')) campo(el, tipo, { escribiendo: true });
+    campo(el, tipo, { escribiendo: true });
+  });
+
+  document.addEventListener('change', e => {
+    const el = e.target;
+    if (el.matches('select[data-val]')) campo(el, el.dataset.val);
   });
 
   document.addEventListener('focusout', e => {

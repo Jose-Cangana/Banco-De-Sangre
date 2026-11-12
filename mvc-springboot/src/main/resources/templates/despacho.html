@@ -26,9 +26,14 @@
               <div class="cell-muted" style="font-size:12.5px;">Escanea ambos códigos para ejecutar la doble verificación electrónica.</div>
             </div>
             <div class="divider" style="margin:16px 0;"></div>
+            <div class="field" style="margin-bottom:14px;">
+              <label for="despacho-receptor">ID institucional del médico o encargado que recibe</label>
+              <input class="input mono" id="despacho-receptor" maxlength="40" required
+                     pattern="[A-Za-z0-9][A-Za-z0-9._\/\-]{1,39}" oninput="evaluarVerificacion()" autocomplete="off">
+            </div>
             <div class="checkline" style="margin-bottom:14px;">
               <input type="checkbox" id="despacho-firma" onchange="evaluarVerificacion()">
-              <label for="despacho-firma" style="font-weight:400;">Firma electrónica del responsable validada</label>
+              <label for="despacho-firma" style="font-weight:400;">Confirmo la autorización de la entrega</label>
             </div>
             <button class="btn btn-primary" id="despacho-btn" style="width:100%; justify-content:center; opacity:.5;" disabled onclick="autorizarDespacho()">Autorizar y registrar entrega</button>
             <div style="text-align:center; font-size:11px; color:var(--ink-400); margin-top:8px;">Toda entrega queda registrada en la auditoría</div>

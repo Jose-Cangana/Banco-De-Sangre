@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- REPORTE DINAMICO: solicitudes transfusionales. Parametros: FECHA_INICIO, FECHA_FIN, PRIORIDAD (TODAS|rutina|urgente|emergencia). -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rpt_dinamico_solicitudes" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="794" leftMargin="24" rightMargin="24" topMargin="24" bottomMargin="24" whenNoDataType="NoDataSection" isSummaryWithPageHeaderAndFooter="true">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="BancoSangrePostgreSQL"/>
+	<style name="Base" isDefault="true" forecolor="#12161F" fontName="DejaVu Sans" fontSize="8"/>
+	<style name="Fila" mode="Opaque" backcolor="#FFFFFF">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT} % 2 == 0]]></conditionExpression>
+			<style mode="Opaque" backcolor="#F7F8FA"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="LOGO" class="java.lang.String">
+		<parameterDescription><![CDATA[Ruta del logo (en la app: reportes/img/logo-reporte.png)]]></parameterDescription>
+		<defaultValueExpression><![CDATA["img/logo-reporte.png"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="USUARIO" class="java.lang.String">
+		<parameterDescription><![CDATA[Usuario que genera el reporte]]></parameterDescription>
+		<defaultValueExpression><![CDATA["Sistema"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="FECHA_INICIO" class="java.util.Date">
+		<parameterDescription><![CDATA[Fecha inicial del periodo]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2026-01-01")]]></defaultValueExpression>
+	</parameter>
+	<parameter name="FECHA_FIN" class="java.util.Date">
+		<parameterDescription><![CDATA[Fecha final del periodo]]></parameterDescription>
+		<defaultValueExpression><![CDATA[new java.util.Date()]]></defaultValueExpression>
+	</parameter>
+	<parameter name="PRIORIDAD" class="java.lang.String">
+		<parameterDescription><![CDATA[TODAS, rutina, urgente o emergencia]]></parameterDescription>
+		<defaultValueExpression><![CDATA["TODAS"]]></defaultValueExpression>
+	</parameter>
+	<queryString language="SQL">
+		<![CDATA[SELECT s.codigo,
+       s.creado_en::date AS fecha,
+       p.nombres AS paciente,
+       p.historia_clinica,
+       s.servicio,
+       s.diagnostico_texto AS diagnostico,
+       s.prioridad::text AS prioridad,
+       s.estado,
+       u.apellidos || ', ' || u.nombres AS medico
+FROM solicitudes_transfusionales s
+JOIN pacientes p ON p.id = s.paciente_id
+JOIN usuarios u ON u.id = s.medico_id
+WHERE s.creado_en::date BETWEEN CAST($P{FECHA_INICIO} AS date) AND CAST($P{FECHA_FIN} AS date)
+  AND (CAST($P{PRIORIDAD} AS text) = 'TODAS' OR s.prioridad::text = CAST($P{PRIORIDAD} AS text))
+ORDER BY s.creado_en, s.codigo]]>
+	</queryString>
+	<field name="codigo" class="java.lang.String"/>
+	<field name="fecha" class="java.sql.Date"/>
+	<field name="paciente" class="java.lang.String"/>
+	<field name="historia_clinica" class="java.lang.String"/>
+	<field name="servicio" class="java.lang.String"/>
+	<field name="diagnostico" class="java.lang.String"/>
+	<field name="prioridad" class="java.lang.String"/>
+	<field name="estado" class="java.lang.String"/>
+	<field name="medico" class="java.lang.String"/>
+	<variable name="TOTAL" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[1]]></variableExpression>
+	</variable>
+	<variable name="URGENTES" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA["rutina".equals($F{prioridad}) ? 0 : 1]]></variableExpression>
+	</variable>
+	<variable name="PENDIENTES" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA["pendiente".equals($F{estado}) ? 1 : 0]]></variableExpression>
+	</variable>
+	<variable name="COMPATIBLES" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA["compatible".equals($F{estado}) ? 1 : 0]]></variableExpression>
+	</variable>
+	<title>
+		<band height="188">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="64" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="64" width="794" height="3" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<image onErrorType="Blank">
+				<reportElement x="14" y="9" width="46" height="46"/>
+				<imageExpression><![CDATA[$P{LOGO}]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="72" y="11" width="420" height="22" forecolor="#FFFFFF"/>
+				<textElement verticalAlignment="Middle"><font size="15" isBold="true"/></textElement>
+				<text><![CDATA[BancoSangre HLEV]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="72" y="33" width="470" height="16" forecolor="#AEB6CF"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Hospital de Lima Este Vitarte  ·  Banco de Sangre Tipo II  ·  Estándar ISBT 128]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="564" y="11" width="216" height="12" forecolor="#AEB6CF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[RPT-02  ·  REPORTE DINÁMICO]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="564" y="24" width="216" height="16" forecolor="#FFFFFF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[new java.text.SimpleDateFormat("dd/MM/yyyy  HH:mm").format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="564" y="41" width="216" height="14" forecolor="#AEB6CF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA["Generado por: " + $P{USUARIO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="76" width="794" height="28" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="21" isBold="true"/></textElement>
+				<text><![CDATA[Solicitudes transfusionales]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="104" width="794" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="8.5"/></textElement>
+				<textFieldExpression><![CDATA["Periodo: " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{FECHA_INICIO}) + " al " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{FECHA_FIN}) + "     ·     Prioridad: " + ("TODAS".equals($P{PRIORIDAD}) ? "Todas" : $P{PRIORIDAD})]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="0" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="1" y="134" width="4" height="38" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="16" y="132" width="165" height="26" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{TOTAL}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="16" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Solicitudes en el periodo]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="201" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="202" y="134" width="4" height="38" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="217" y="132" width="165" height="26" forecolor="#9E1B1B"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{URGENTES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="217" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Urgentes o emergencias]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="402" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="403" y="134" width="4" height="38" forecolor="#A9760A" backcolor="#A9760A"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="418" y="132" width="165" height="26" forecolor="#A9760A"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{PENDIENTES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="418" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Pendientes de atención]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="603" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="604" y="134" width="4" height="38" forecolor="#1E7F3C" backcolor="#1E7F3C"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="619" y="132" width="165" height="26" forecolor="#1E7F3C"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{COMPATIBLES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="619" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Con pruebas compatibles]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="30">
+				<printWhenExpression><![CDATA[$V{PAGE_NUMBER} > 1]]></printWhenExpression>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="24" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="12" y="0" width="770" height="24" forecolor="#FFFFFF"/>
+				<textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<text><![CDATA[BancoSangre HLEV  ·  Solicitudes transfusionales]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="24" width="794" height="2" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="26">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="84" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[CÓDIGO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="84" y="0" width="58" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[FECHA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="142" y="0" width="116" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[PACIENTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="258" y="0" width="84" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[HIST. CLÍNICA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="342" y="0" width="76" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[SERVICIO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="418" y="0" width="118" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[DIAGNÓSTICO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="536" y="0" width="68" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[PRIORIDAD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="604" y="0" width="76" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[ESTADO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="680" y="0" width="114" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[MÉDICO SOLICITANTE]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22">
+			<rectangle>
+				<reportElement style="Fila" x="0" y="0" width="794" height="22"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<line>
+				<reportElement x="0" y="21" width="794" height="1" forecolor="#E3E6EB"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#E3E6EB"/></graphicElement>
+			</line>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="84" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{codigo}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="84" y="0" width="58" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{fecha}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="142" y="0" width="116" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{paciente}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="258" y="0" width="84" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{historia_clinica}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="342" y="0" width="76" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{servicio}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="418" y="0" width="118" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{diagnostico}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="542" y="3" width="56" height="16" forecolor="#9E1B1B" backcolor="#9E1B1B">
+				<printWhenExpression><![CDATA["emergencia".equals($F{prioridad})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="542" y="3" width="56" height="16" forecolor="#FFFFFF">
+				<printWhenExpression><![CDATA["emergencia".equals($F{prioridad})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{prioridad}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="542" y="3" width="56" height="16" forecolor="#FBF1DE" backcolor="#FBF1DE">
+				<printWhenExpression><![CDATA["urgente".equals($F{prioridad})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="542" y="3" width="56" height="16" forecolor="#A9760A">
+				<printWhenExpression><![CDATA["urgente".equals($F{prioridad})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{prioridad}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="542" y="3" width="56" height="16" forecolor="#EEF1F4" backcolor="#EEF1F4">
+				<printWhenExpression><![CDATA[!"emergencia".equals($F{prioridad}) && !"urgente".equals($F{prioridad})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="542" y="3" width="56" height="16" forecolor="#475467">
+				<printWhenExpression><![CDATA[!"emergencia".equals($F{prioridad}) && !"urgente".equals($F{prioridad})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{prioridad}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="610" y="3" width="64" height="16" forecolor="#FBF1DE" backcolor="#FBF1DE">
+				<printWhenExpression><![CDATA["pendiente".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="610" y="3" width="64" height="16" forecolor="#A9760A">
+				<printWhenExpression><![CDATA["pendiente".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="610" y="3" width="64" height="16" forecolor="#E9F6EC" backcolor="#E9F6EC">
+				<printWhenExpression><![CDATA["compatible".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="610" y="3" width="64" height="16" forecolor="#1E7F3C">
+				<printWhenExpression><![CDATA["compatible".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="610" y="3" width="64" height="16" forecolor="#FBEAEA" backcolor="#FBEAEA">
+				<printWhenExpression><![CDATA[!"pendiente".equals($F{estado}) && !"compatible".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="610" y="3" width="64" height="16" forecolor="#9E1B1B">
+				<printWhenExpression><![CDATA[!"pendiente".equals($F{estado}) && !"compatible".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="680" y="0" width="114" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{medico}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20">
+			<line>
+				<reportElement x="0" y="2" width="794" height="1" forecolor="#E3E6EB"/>
+			</line>
+			<textField>
+				<reportElement x="0" y="4" width="654" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="6.5"/></textElement>
+				<textFieldExpression><![CDATA["BancoSangre HLEV  ·  Documento generado automáticamente por " + $P{USUARIO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="654" y="4" width="100" height="14" forecolor="#5B6472"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER} + " de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="756" y="4" width="38" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="280">
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="0" y="4" width="794" height="38" forecolor="#F4F5F7" backcolor="#F4F5F7"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="14" y="7" width="766" height="16" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Solicitudes: " + $V{TOTAL} + "     Urgentes o emergencias: " + $V{URGENTES} + "     Pendientes: " + $V{PENDIENTES} + "     Compatibles: " + $V{COMPATIBLES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="14" y="23" width="766" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7" isItalic="true"/></textElement>
+				<text><![CDATA[Prioridad: emergencia (rojo), urgente (ámbar), rutina (gris). Fuente: solicitudes_transfusionales, pacientes y usuarios.]]></text>
+			</staticText>
+		<barChart><chart evaluationTime="Report" isShowLegend="false"><reportElement x="0" y="52" width="794" height="220"/><chartTitle><font size="12" isBold="true"/><titleExpression><![CDATA["Resumen gráfico"]]></titleExpression></chartTitle><chartSubtitle/><chartLegend/></chart><categoryDataset><dataset incrementType="Report"/><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Solicitudes en el periodo"]]></categoryExpression><valueExpression><![CDATA[$V{TOTAL}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Urgentes o emergencias"]]></categoryExpression><valueExpression><![CDATA[$V{URGENTES}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Pendientes de atención"]]></categoryExpression><valueExpression><![CDATA[$V{PENDIENTES}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Con pruebas compatibles"]]></categoryExpression><valueExpression><![CDATA[$V{COMPATIBLES}]]></valueExpression></categorySeries></categoryDataset><barPlot isShowLabels="true"><plot orientation="Horizontal"><seriesColor seriesOrder="0" color="#16888C"/></plot><itemLabel color="#171D38"/><categoryAxisLabelExpression><![CDATA["Indicador"]]></categoryAxisLabelExpression><valueAxisLabelExpression><![CDATA["Cantidad"]]></valueAxisLabelExpression></barPlot></barChart>
+</band>
+	</summary>
+	<noData>
+		<band height="150">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="6" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="0" y="92" width="794" height="18" forecolor="#5B6472"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="9"/></textElement>
+				<textFieldExpression><![CDATA["Periodo: " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{FECHA_INICIO}) + " al " + new java.text.SimpleDateFormat("dd/MM/yyyy").format($P{FECHA_FIN}) + "     ·     Prioridad: " + ("TODAS".equals($P{PRIORIDAD}) ? "Todas" : $P{PRIORIDAD})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="30" width="794" height="26" forecolor="#171D38"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="14" isBold="true"/></textElement>
+				<text><![CDATA[Solicitudes transfusionales]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="62" width="794" height="22" forecolor="#5B6472"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="10" isItalic="true"/></textElement>
+				<text><![CDATA[No se encontraron registros con los filtros indicados.]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>

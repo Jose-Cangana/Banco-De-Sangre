@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(titulo=${info.titulo()})}"></head>
 <body>
@@ -28,8 +28,19 @@
                 <option value="despachado">Despachado</option>
                 <option value="fraccionado">Fraccionado</option>
               </select>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="window.open('/api/reportes/unidades-vencer.pdf', '_blank')" title="Reporte oficial de unidades por vencer (FEFO)">Reporte por vencer (PDF)</button>
               <button class="btn btn-ghost btn-sm" onclick="exportarInventario()">Exportar</button>
             </div>
+          </div>
+          <div class="cold-chain-console" aria-labelledby="cold-chain-title">
+            <aside class="cold-chain-index">
+              <div>
+                <div class="card-title" id="cold-chain-title">Cadena de frío en tiempo real</div>
+                <div class="card-desc">Selecciona una cámara para inspeccionar temperatura, rango y ocupación.</div>
+              </div>
+              <div id="camara3d-lista" class="camara3d-lista" role="listbox" aria-label="Cámaras registradas"></div>
+            </aside>
+            <div id="camara3d-detalle" class="camara3d-detalle" aria-live="polite"></div>
           </div>
           <table>
             <thead><tr>
@@ -97,7 +108,7 @@
     state.serologia = /*[[${serologia}]]*/ [];
     sincronizarLocal('inventory', 'temps', 'donantes', 'serologia');
     document.addEventListener('DOMContentLoaded', function() {
-      renderInventory(); renderTemps(); fillFractSelect(); renderDonaciones();
+      renderInventory(); renderTemps(); renderCamaras3D(); fillFractSelect(); renderDonaciones();
     });
   </script>
 </body>

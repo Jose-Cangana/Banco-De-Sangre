@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import pe.edu.utp.bancosangre.dao.LecturaDao;
 import pe.edu.utp.bancosangre.dao.SincronizacionDao;
 import pe.edu.utp.bancosangre.dao.UsuarioDao;
+import pe.edu.utp.bancosangre.dao.PacienteDao;
 
 import java.util.List;
 import java.util.Map;
@@ -20,12 +21,22 @@ public class BancoSangreService {
     private final Map<String, LecturaDao> lecturas;
     private final SincronizacionDao sincronizacion;
     private final UsuarioDao usuarios;
+    private final PacienteDao pacientes;
 
     /** Spring entrega aquí TODOS los DAO de lectura (donantes, usuarios, inventario...). */
-    public BancoSangreService(List<LecturaDao> daosDeLectura, SincronizacionDao sincronizacion, UsuarioDao usuarios) {
+    public BancoSangreService(List<LecturaDao> daosDeLectura, SincronizacionDao sincronizacion, UsuarioDao usuarios, PacienteDao pacientes) {
         this.lecturas = daosDeLectura.stream().collect(Collectors.toMap(LecturaDao::coleccion, Function.identity()));
         this.sincronizacion = sincronizacion;
         this.usuarios = usuarios;
+        this.pacientes = pacientes;
+    }
+
+    public java.util.Optional<Map<String, Object>> buscarPaciente(String identificador) {
+        return pacientes.buscar(identificador);
+    }
+
+    public String reservarHistoria() {
+        return pacientes.reservarHistoria();
     }
 
     /** Registros de una colección (usuarios, donantes, inventario, solicitudes, ...). */

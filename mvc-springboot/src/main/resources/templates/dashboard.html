@@ -4,11 +4,41 @@
 <body>
 <div th:replace="~{fragments/layout :: shell(~{::section})}">
   <section>
-        <div class="grid-4">
-          <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Unidades disponibles</div><div class="value">1,248</div><div class="hint">+4.2% vs. semana previa</div></div>
-          <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Próximas a vencer (≤72h)</div><div class="value">37</div><div class="hint">Primeras en salir</div></div>
-          <div class="kpi"><div class="bar" style="background:var(--blue-700)"></div><div class="label">Solicitudes activas</div><div class="value">12</div><div class="hint">UCI · Emergencia · SOP</div></div>
-          <div class="kpi"><div class="bar" style="background:var(--red-700)"></div><div class="label">Stock crítico (O−)</div><div class="value">6 un.</div><div class="hint">Bajo el mínimo de seguridad</div></div>
+        <div class="workspace-intro">
+          <div><h2>Cada unidad cuenta.</h2><p>Consulta la disponibilidad de sangre, revisa las alertas y organiza la atención del servicio.</p></div>
+          <img class="workspace-symbol" th:src="@{/img/logo-claro.svg}" width="58" height="66" alt="">
+        </div>
+        <div class="card" id="dashboard-consultas" style="margin-bottom:16px;">
+          <div class="card-title">Consultas a la base de datos</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:18px;">
+            <button type="button" class="btn btn-primary" onclick="consultarDashboard('inventario', this)">Consultar inventario</button>
+            <button type="button" class="btn btn-primary" onclick="consultarDashboard('solicitudes', this)">Consultar solicitudes</button>
+            <button type="button" class="btn btn-primary" onclick="consultarDashboard('donantes', this)">Consultar donantes</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="consultarDashboard('pacientes', this)">Consultar pacientes</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="consultarDashboard('tamizajes', this)">Consultar tamizajes</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="consultarDashboard('camaras', this)">Consultar cámaras</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="consultarDashboard('despachos', this)">Consultar despachos</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="consultarDashboard('campanas', this)">Consultar campañas</button>
+          </div>
+          <p id="dashboard-consulta-estado" role="status" aria-live="polite"></p>
+          <label for="dashboard-tipo-grafico">Tipo de gráfico</label>
+          <select class="input" id="dashboard-tipo-grafico" style="max-width:220px;margin-top:8px;" onchange="cambiarGraficoDashboard()">
+            <option value="barras">Barras</option>
+            <option value="circular">Circular</option>
+          </select>
+          <div id="dashboard-consulta-anillos" class="consulta-anillos" hidden></div>
+          <div id="dashboard-consulta-grafico" class="consulta-grafico" role="img" hidden></div>
+          <div id="dashboard-consulta-circular" class="consulta-circular" hidden>
+            <div class="consulta-donut" role="img"><div><strong></strong><span>donantes</span></div></div>
+            <div class="consulta-leyenda"></div>
+          </div>
+          <dl id="dashboard-consulta-resultados" class="grid-2"></dl>
+        </div>
+        <div class="grid-4 dashboard-metrics">
+          <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Hemocomponentes disponibles</div><div class="value" data-metrica="disponibles" th:text="${metricas.disponibles}">0</div><div class="hint">Disponibles y vigentes</div></div>
+          <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Vencen en los próximos 3 días</div><div class="value" data-metrica="proximas" th:text="${metricas.proximas}">0</div><div class="hint">Disponibles, desde hoy hasta el tercer día</div></div>
+          <div class="kpi"><div class="bar" style="background:var(--blue-700)"></div><div class="label">Solicitudes activas</div><div class="value" data-metrica="solicitudes" th:text="${metricas.solicitudes}">0</div><div class="hint">Pendientes o compatibles, sin despacho</div></div>
+          <div class="kpi"><div class="bar" style="background:var(--red-700)"></div><div class="label">Donantes registrados</div><div class="value" data-metrica="donantes" th:text="${metricas.donantes}">0</div><div class="hint">Fichas registradas en PostgreSQL</div></div>
         </div>
 
         <div class="two-col">
@@ -16,7 +46,7 @@
             <div class="card-title-row">
               <div>
                 <div class="card-title">Stock de glóbulos rojos por grupo sanguíneo</div>
-                <div class="card-desc">Actualizado en tiempo real</div>
+              <div class="card-desc">Consultado al abrir el panel</div>
               </div>
               <span class="pill purple"><span class="dot"></span>Orden por vencimiento</span>
             </div>
@@ -34,16 +64,16 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="dashboard-seguimiento">
           <div class="card-title-row">
             <div>
-              <div class="card-title">Cumplimiento y proyección de demanda</div>
-              <div class="card-desc">Indicadores del servicio y previsión de abastecimiento</div>
+              <div class="card-title">Seguimiento del servicio</div>
+              <div class="card-desc">Datos consultados en PostgreSQL al abrir o recargar el panel</div>
             </div>
           </div>
           <div class="grid-2">
-            <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Cumplimiento normativo PRONAHEBAS</div><div class="value">96.8%</div><div class="hint">32 de 33 controles conformes este trimestre</div></div>
-            <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Proyección de desabastecimiento</div><div class="value" style="font-size:18px;">O− en 4 días</div><div class="hint">Según demanda histórica vs. stock actual</div></div>
+            <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Hemocomponentes en cuarentena</div><div class="value" data-metrica="cuarentena" th:text="${metricas.cuarentena}">0</div><div class="hint">Pendientes de liberación</div></div>
+            <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Donantes diferidos</div><div class="value" data-metrica="diferidos" th:text="${metricas.diferidos}">0</div><div class="hint">Diferimiento temporal o permanente registrado</div></div>
           </div>
         </div>
 
@@ -62,6 +92,159 @@
   <!--/* Hidrata el estado del navegador con los datos que trajo el Controlador
        desde PostgreSQL (servicio y DAO de stock). */-->
   <script th:inline="javascript">
+    let datosGraficoDashboard = {};
+    let etiquetasGraficoDashboard = {};
+    let animacionAnillos = null;
+    function cambiarGraficoDashboard() {
+      cancelAnimationFrame(animacionAnillos);
+      const circular = document.getElementById('dashboard-tipo-grafico').value === 'circular';
+      const entradas = Object.entries(datosGraficoDashboard).filter(([clave]) => clave !== 'volumen_promedio_ml');
+      document.getElementById('dashboard-consulta-grafico').hidden = circular || !entradas.length;
+      document.getElementById('dashboard-consulta-circular').hidden = true;
+      const anillos = document.getElementById('dashboard-consulta-anillos');
+      anillos.hidden = !circular || !entradas.length;
+      anillos.replaceChildren();
+      if (!circular || !entradas.length) return;
+      const maximo = Math.max(1, ...entradas.map(([, valor]) => Number(valor)));
+      const rellenos = [];
+      entradas.forEach(([clave, cantidad], indice) => {
+        const tarjeta = document.createElement('div');
+        const anillo = document.createElement('div');
+        anillo.className = 'consulta-donut';
+        const color = ['#16888c', '#b51f4b', '#b47b12'][indice % 3];
+        const avance = 100 * Number(cantidad) / maximo;
+        anillo.style.background = 'conic-gradient(' + color + ' 0%, var(--line) 0)';
+        rellenos.push({anillo, color, avance});
+        const centro = document.createElement('div');
+        const valor = document.createElement('strong');
+        valor.textContent = cantidad;
+        centro.append(valor);
+        anillo.append(centro);
+        const etiqueta = document.createElement('p');
+        etiqueta.textContent = etiquetasGraficoDashboard[clave] || clave;
+        tarjeta.append(anillo, etiqueta);
+        anillos.append(tarjeta);
+      });
+      const escala = document.createElement('p');
+      escala.className = 'hint';
+      escala.style.gridColumn = '1 / -1';
+      escala.textContent = 'Escala compartida: cada círculo completo representa ' + maximo + ', el mayor valor de esta consulta. Los indicadores pueden superponerse.';
+      anillos.append(escala);
+      const movimientoReducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const inicio = performance.now();
+      function rellenarAnillos(ahora) {
+        const progreso = movimientoReducido ? 1 : Math.min((ahora - inicio) / 1000, 1);
+        const suavizado = 1 - Math.pow(1 - progreso, 3);
+        rellenos.forEach(({anillo, color, avance}) => {
+          anillo.style.background = 'conic-gradient(' + color + ' ' + (avance * suavizado) + '%, var(--line) 0)';
+        });
+        if (progreso < 1) animacionAnillos = requestAnimationFrame(rellenarAnillos);
+      }
+      animacionAnillos = requestAnimationFrame(rellenarAnillos);
+    }
+    async function consultarDashboard(consulta, boton) {
+      const estado = document.getElementById('dashboard-consulta-estado');
+      const resultados = document.getElementById('dashboard-consulta-resultados');
+      const grafico = document.getElementById('dashboard-consulta-grafico');
+      const circular = document.getElementById('dashboard-consulta-circular');
+      const botones = [...boton.parentElement.querySelectorAll('button')];
+      botones.forEach(b => { b.disabled = true; });
+      estado.textContent = 'Consultando…';
+      resultados.replaceChildren();
+      grafico.replaceChildren();
+      grafico.hidden = true;
+      circular.hidden = true;
+      datosGraficoDashboard = {};
+      cambiarGraficoDashboard();
+      const etiquetas = {
+        disponibles: 'Hemocomponentes disponibles', proximas: 'Vencen en los próximos 3 días',
+        cuarentena: 'Hemocomponentes en cuarentena', solicitudes: 'Solicitudes activas sin despacho',
+        donantes: 'Donantes registrados', diferidos: 'Donantes diferidos',
+        conservacion_revisar: 'Conservación por revisar', vencimiento_revisar: 'Vencidos sin incinerar',
+        volumen_promedio_ml: 'Volumen promedio disponible (ml)', urgentes_sin_entrega: 'Urgentes sin entrega',
+        pacientes_solicitantes: 'Pacientes con solicitudes', incompatibles: 'Solicitudes incompatibles',
+        documento_pendiente: 'Documento del paciente pendiente', intervalo_cumplido: 'Sin diferimiento e intervalo de 90 días cumplido',
+        sin_donacion_previa: 'Sin donación previa registrada', correo_no_demo: 'Correo fuera del dominio de demostración',
+        campanas_recurrentes: 'Campañas con al menos 2 donantes',
+        pacientes: 'Pacientes registrados', pacientes_con_solicitud: 'Pacientes con solicitudes', grupo_por_confirmar: 'Grupo sanguíneo por confirmar',
+        tamizajes: 'Tamizajes registrados', reactivos: 'Con algún marcador reactivo', indeterminados: 'Con algún marcador indeterminado',
+        camaras: 'Cámaras registradas', fuera_rango: 'Temperatura fuera del rango', lectura_pendiente: 'Sin lectura reciente (24 horas)',
+        entregas: 'Entregas registradas', responsables: 'Responsables distintos', receptor_pendiente: 'ID de receptor pendiente',
+        campanas: 'Campañas con donantes', captados: 'Donantes captados', mayor_captacion: 'Mayor captación de una campaña'
+      };
+      try {
+        const respuesta = await fetch('/api/dashboard/' + consulta, {headers:{Accept:'application/json'}, cache:'no-store'});
+        if (!respuesta.ok) throw new Error(respuesta.status === 401 ? 'Sesión vencida. Vuelve a iniciar sesión.' : 'No se pudo completar la consulta.');
+        const datos = await respuesta.json();
+        datosGraficoDashboard = datos;
+        etiquetasGraficoDashboard = etiquetas;
+        const entradas = Object.entries(datos);
+        const maximo = Math.max(1, ...entradas.filter(([clave]) => clave !== 'volumen_promedio_ml').map(([, cantidad]) => Number(cantidad)));
+        grafico.setAttribute('aria-label', 'Consulta de ' + consulta + '. ' +
+          entradas.map(([clave, cantidad]) => (etiquetas[clave] || clave) + ': ' + cantidad).join('. '));
+        entradas.forEach(([clave, cantidad]) => {
+          if (clave === 'volumen_promedio_ml') return;
+          const fila = document.createElement('div');
+          fila.className = 'consulta-grafico-fila';
+          const etiqueta = document.createElement('span');
+          etiqueta.textContent = etiquetas[clave] || clave;
+          const pista = document.createElement('div');
+          pista.className = 'consulta-grafico-pista';
+          const barra = document.createElement('div');
+          barra.className = 'consulta-grafico-barra';
+          barra.style.width = (100 * Number(cantidad) / maximo) + '%';
+          pista.append(barra);
+          const valor = document.createElement('strong');
+          valor.textContent = cantidad;
+          fila.append(etiqueta, pista, valor);
+          grafico.append(fila);
+        });
+        grafico.hidden = false;
+        if (consulta === 'donantes') {
+          const total = Number(datos.donantes);
+          const diferidos = Number(datos.diferidos);
+          const porcentaje = total ? 100 * diferidos / total : 0;
+          const donut = circular.querySelector('.consulta-donut');
+          donut.style.background = total
+            ? 'conic-gradient(#b51f4b 0% ' + porcentaje + '%, #16888c ' + porcentaje + '% 100%)'
+            : 'var(--line)';
+          donut.setAttribute('aria-label', total + ' donantes: ' + diferidos + ' diferidos y ' + (total - diferidos) + ' sin diferimiento registrado');
+          donut.querySelector('strong').textContent = total;
+          const leyenda = circular.querySelector('.consulta-leyenda');
+          leyenda.replaceChildren();
+          [ ['Diferidos', diferidos, '#b51f4b'], ['Sin diferimiento registrado', total - diferidos, '#16888c'] ].forEach(([nombre, cantidad, color]) => {
+            const fila = document.createElement('div');
+            const etiqueta = document.createElement('span');
+            const punto = document.createElement('i');
+            punto.style.background = color;
+            etiqueta.append(punto, document.createTextNode(nombre));
+            const valor = document.createElement('strong');
+            valor.textContent = cantidad + ' · ' + (total ? (100 * cantidad / total).toFixed(1) : '0.0') + '%';
+            fila.append(etiqueta, valor);
+            leyenda.append(fila);
+          });
+          circular.hidden = false;
+          grafico.hidden = true;
+        }
+        Object.entries(datos).forEach(([clave, cantidad]) => {
+          const grupo = document.createElement('div');
+          const etiqueta = document.createElement('dt');
+          const valor = document.createElement('dd');
+          etiqueta.textContent = etiquetas[clave] || clave;
+          valor.textContent = cantidad;
+          grupo.append(etiqueta, valor);
+          resultados.append(grupo);
+          const indicador = document.querySelector('[data-metrica="' + clave + '"]');
+          if (indicador) indicador.textContent = cantidad;
+        });
+        cambiarGraficoDashboard();
+        estado.textContent = 'Consulta de ' + consulta + ' actualizada a las ' + new Date().toLocaleTimeString('es-PE');
+      } catch (error) {
+        estado.textContent = error.message;
+      } finally {
+        botones.forEach(b => { b.disabled = false; });
+      }
+    }
     state.aboGroups = /*[[${aboGroups}]]*/ [];
     state.alerts = /*[[${alertas}]]*/ [];
     sincronizarLocal('alerts');

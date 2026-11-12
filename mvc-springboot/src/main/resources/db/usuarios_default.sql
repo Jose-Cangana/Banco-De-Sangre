@@ -4,7 +4,7 @@
 --  Pone los roles (Cangana y Yangali = Administrador), activa las cuentas y
 --  asigna las contraseñas nuevas. Se puede ejecutar varias veces.
 --  Uso (pgAdmin: Query Tool sobre la base bancosangre) o:
---    psql -U bancosangre -d bancosangre -f actualizar_usuarios_equipo.sql
+--    psql -U bancosangre -d bancosangre -f usuarios_default.sql
 -- =====================================================================
 INSERT INTO usuarios (dni, correo, contrasena_hash, nombres, apellidos, rol) VALUES
       ('70000001', 'jcangana@hlev.gob.pe', '$2a$10$AKGEzh98UOY.mlWQEGAeIufDv/dljnCgebtMOXLCRrYeqqOIPmR0a', 'José Leonel', 'Cangana Salcedo', 'administrador'),

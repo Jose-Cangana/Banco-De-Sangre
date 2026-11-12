@@ -23,7 +23,6 @@ public final class Vista {
         put("solicitudes", "Solicitudes", "Pedidos de sangre de los servicios del hospital");
         put("despacho", "Despacho", "Verificación y entrega de la unidad al servicio");
         put("interhospitalario", "Red de hospitales", "Stock e intercambio de unidades con otros establecimientos");
-        put("movil", "Aplicación móvil", "El mismo sistema, en versión para celular");
         put("hemovigilancia", "Hemovigilancia", "Reacciones presentadas después de una transfusión");
         put("reportes", "Reportes", "Consolidados del servicio para descargar o enviar");
         put("auditoria", "Auditoría", "Qué hizo cada usuario dentro del sistema");

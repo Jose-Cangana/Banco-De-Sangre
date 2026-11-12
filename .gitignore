@@ -7,3 +7,4 @@ target/
 application-local.properties
 # Scripts de ayuda para hacer los commits
 commit-*.ps1
+mvc-springboot/.banco-local/

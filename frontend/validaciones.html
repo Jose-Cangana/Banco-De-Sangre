@@ -1719,7 +1719,7 @@ function renderQuickAccess(){
   }).join('');
 }
 
-/* ---------------- Render + acciones: Inventario (RF-09, RF-10) ---------------- */
+/* ---------------- Render + acciones: Inventario ---------------- */
 function renderInventory(){
   const q = (document.getElementById('inv-search')?.value || '').trim().toLowerCase();
   const filter = document.getElementById('inv-filter')?.value || '';
@@ -1994,7 +1994,7 @@ function cambiarEstadoUnidad(din, nuevoEstado){
   renderInventory();
 }
 
-/* Fraccionamiento (RF-06) */
+/* Fraccionamiento */
 function fillFractSelect(){
   const sel = document.getElementById('fract-din');
   if(!sel) return;
@@ -2029,7 +2029,7 @@ function fraccionarUnidad(){
   renderInventory();
 }
 
-/* ---------------- Donantes (RF-03, RF-04) ---------------- */
+/* ---------------- Donantes ---------------- */
 function evaluarAptitud(){
   const peso = parseFloat(document.getElementById('don-peso').value);
   const hb = parseFloat(document.getElementById('don-hb').value);
@@ -2205,7 +2205,7 @@ function renderDiferimientos(){
   }).join('');
 }
 
-/* ---------------- Serología (RF-07, RF-08) ----------------
+/* ---------------- Serología ----------------
    Cada marcador se digita dos veces por separado (Digitación 1 y 2).
    Solo se acepta el resultado si las dos coinciden; así un error de tipeo no
    deja pasar una unidad contaminada. Un resultado reactivo o indeterminado
@@ -2331,7 +2331,7 @@ function guardarSerologia(){
   alerta.innerHTML = mensajeAlerta;
 }
 
-/* ---------------- Etiquetado ISBT 128 (RF-05) ---------------- */
+/* ---------------- Etiquetado ISBT 128 ---------------- */
 function updateEtiquetaPreview(){
   const abo = document.getElementById('et-abo').value;
   const [code, nombre] = document.getElementById('et-producto').value.split('|');
@@ -2388,7 +2388,7 @@ function generarCertificado(){
   toast('Certificado de calidad generado con código QR');
 }
 
-/* ---------------- Solicitudes (RF-11, RF-12) ---------------- */
+/* ---------------- Solicitudes ---------------- */
 function toggleTipoSolicitud(){
   const esReserva = document.getElementById('sol-tipo').value === 'reserva';
   document.getElementById('sol-reserva-field').style.display = esReserva ? '' : 'none';
@@ -2573,7 +2573,7 @@ function switchTab(group, tabKey){
   if(tabBtn) tabBtn.click();
 }
 
-/* ---------------- Despacho (RF-13) ---------------- */
+/* ---------------- Despacho ---------------- */
 function fillDespachoContext(){ /* placeholder para futura sincronización con solicitudes */ }
 function escanearHemocomponente(){
   const candidatos = state.inventory.filter(u=>u.status==='disponible' || u.status==='reservado');
@@ -2634,7 +2634,7 @@ function autorizarDespacho(){
   evaluarVerificacion();
 }
 
-/* ---------------- Hemovigilancia (RF-15) ---------------- */
+/* ---------------- Hemovigilancia ---------------- */
 function renderHemovigilancia(){
   document.getElementById('hemovigilancia-rows').innerHTML = state.hemovigilancia.map(e=>{
     const [sColor,sLabel] = e.severidad.split(':');
@@ -2687,7 +2687,7 @@ function guardarEventoHemovigilancia(){
   renderHemovigilancia();
 }
 
-/* ---------------- Reportes (RF-16) ---------------- */
+/* ---------------- Reportes ---------------- */
 const reportsData = [
   ["Reporte operacional mensual","Movimientos de inventario, captación y despacho","PRONAHEBAS"],
   ["Reporte epidemiológico","Prevalencia de marcadores serológicos reactivos","DIGDOT"],
@@ -2873,14 +2873,14 @@ function descargarReporte(){
   closeModal();
 }
 
-/* ---------------- Auditoría (RF-17) ---------------- */
+/* ---------------- Auditoría ---------------- */
 function renderAudit(){
   document.getElementById('audit-rows').innerHTML = state.auditLog.slice(0,50).map(([ts,user,action,resource,ip])=>{
     return `<tr><td class="mono">${ts}</td><td class="cell-strong">${user}</td><td class="cell-muted">${action}</td><td class="mono">${resource}</td><td class="mono">${ip}</td></tr>`;
   }).join('');
 }
 
-/* ---------------- RF-23 Monitoreo de temperatura ---------------- */
+/* ----------------  Monitoreo de temperatura ---------------- */
 state.temps = [];
 function renderTemps(){
   const el = document.getElementById('temp-grid');
@@ -2894,7 +2894,7 @@ function renderTemps(){
     </div>`).join('');
 }
 
-/* ---------------- RF-18/19/40/45 Red interhospitalaria ---------------- */
+/* ----------------  Red interhospitalaria ---------------- */
 state.establecimientos = [];
 function renderConvenios(){
   const body = document.getElementById('convenios-rows');
@@ -3010,7 +3010,7 @@ function devolverIntercambio(i){
   renderIntercambios();
 }
 
-/* ---------------- RF-20/21 App móvil ---------------- */
+/* ----------------  App móvil ---------------- */
 function simularPushMovil(){
   pushAlert('blue', 'Notificación push enviada', 'Personal asistencial notificado desde app móvil');
   logAudit('Envió notificación push a la aplicación móvil', 'App móvil');
@@ -3018,7 +3018,7 @@ function simularPushMovil(){
 }
 
 
-/* ---------------- Administración: Usuarios (RF-26) ---------------- */
+/* ---------------- Administración: Usuarios ---------------- */
 state.usuarios = [];
 function renderUsuarios(){
   const body = document.getElementById('usuarios-rows');
