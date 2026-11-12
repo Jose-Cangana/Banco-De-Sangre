@@ -96,6 +96,9 @@ public final class ValidadorDatos {
             JsonNode pesoP = pa.get("pesoKg");
             if (pesoP == null || !pesoP.isNumber() || pesoP.asDouble() < 2 || pesoP.asDouble() > 250)
                 return "Paciente " + np + ": el peso es obligatorio (entre 2 y 250 kg)";
+            JsonNode alturaP = pa.get("alturaCm");
+            if (alturaP == null || !alturaP.isNumber() || alturaP.asDouble() < 100 || alturaP.asDouble() > 250)
+                return "Paciente " + np + ": la altura es obligatoria (entre 100 y 250 cm)";
             JsonNode hbP = pa.get("hemoglobina");
             if (hbP == null || !hbP.isNumber()) return "Paciente " + np + ": la hemoglobina es obligatoria";
         }

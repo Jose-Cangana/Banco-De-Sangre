@@ -17,13 +17,13 @@ BEGIN
 
     -- Usuarios (el más reciente primero, como se listan en Administración) ---
     INSERT INTO usuarios (dni, correo, contrasena_hash, nombres, apellidos, rol, activo, ultimo_acceso, creado_en) VALUES
-      ('70000001', 'jcangana@hlev.gob.pe', '$2a$10$AKGEzh98UOY.mlWQEGAeIufDv/dljnCgebtMOXLCRrYeqqOIPmR0a', 'José Leonel', 'Cangana Salcedo', 'administrador', true, '2026-09-29 09:12-05', '2026-09-01 10:07-05'),
-      ('70000002', 'jpalomino@hlev.gob.pe', '$2a$10$2//2nKOC7Wv3fM.Re4J3UuGEEJLsIl1cVIZA.4bKc.FuegpHXjiPC', 'José William', 'Palomino Camarena', 'tecnologo_medico', true, '2026-09-29 08:55-05', '2026-09-01 10:06-05'),
-      ('70000003', 'jjaimes@hlev.gob.pe', '$2a$10$8/WsFyOrSDd1sPwbXLMytOW6V1LE9hoCikRugBQ5GdBP01HefsoZy', 'Julibeth Antonela', 'Jaimes Daza', 'jefe_banco_sangre', true, '2026-09-28 17:40-05', '2026-09-01 10:05-05'),
-      ('70000004', 'dbatallanos@hlev.gob.pe', '$2a$10$p3zcvDp9Fzue3Zns8DVDJes4D.LeZF3BOqHz36F8S9PxBoWnV7GtC', 'Daniel Enrique', 'Batallanos Ibarra', 'medico_solicitante', true, '2026-09-12 11:20-05', '2026-09-01 10:04-05'),
-      ('70000005', 'acamones@hlev.gob.pe', '$2a$10$.OKaCWzzyThFvZh5Vzz3t.0bs1FT6N8QORFL71Vy2lE8M1c8gMhma', 'Antony David', 'Camones Chávez', 'tecnologo_medico', true, '2026-09-29 10:20-05', '2026-09-01 10:03-05'),
-      ('70000006', 'jyangali@hlev.gob.pe', '$2a$10$dlWOsAHoDbi.k/4y0n9f4Ob3FpVWZ2rn8sIofeyCK6t1UgpacyeiS', 'Jesús Alberto', 'Yangali Saravia', 'administrador', true, '2026-09-29 07:30-05', '2026-09-01 10:02-05'),
-      ('70000007', 'aaylas@hlev.gob.pe', '$2a$10$tY5pa2R1mLclh92zSwux9.FmEHO4LhwgXDVOucYTkA0rcazwFO/Te', 'Alexander Hernan', 'Aylas Valdez', 'medico_solicitante', true, '2026-09-29 07:05-05', '2026-09-01 10:01-05');
+      ('70000001', 'jcangana@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'José Leonel', 'Cangana Salcedo', 'administrador', true, '2026-09-29 09:12-05', '2026-09-01 10:07-05'),
+      ('70000002', 'jpalomino@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'José William', 'Palomino Camarena', 'tecnologo_medico', true, '2026-09-29 08:55-05', '2026-09-01 10:06-05'),
+      ('70000003', 'jjaimes@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'Julibeth Antonela', 'Jaimes Daza', 'jefe_banco_sangre', true, '2026-09-28 17:40-05', '2026-09-01 10:05-05'),
+      ('70000004', 'dbatallanos@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'Daniel Enrique', 'Batallanos Ibarra', 'medico_solicitante', true, '2026-09-12 11:20-05', '2026-09-01 10:04-05'),
+      ('70000005', 'acamones@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'Antony David', 'Camones Chávez', 'tecnologo_medico', true, '2026-09-29 10:20-05', '2026-09-01 10:03-05'),
+      ('70000006', 'jyangali@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'Jesús Alberto', 'Yangali Saravia', 'administrador', true, '2026-09-29 07:30-05', '2026-09-01 10:02-05'),
+      ('70000007', 'aaylas@hlev.gob.pe', crypt('Banco2026', gen_salt('bf', 10)), 'Alexander Hernan', 'Aylas Valdez', 'medico_solicitante', true, '2026-09-29 07:05-05', '2026-09-01 10:01-05');
     SELECT id INTO v_tec FROM usuarios WHERE correo = 'jpalomino@hlev.gob.pe';
     SELECT id INTO v_med FROM usuarios WHERE correo = 'dbatallanos@hlev.gob.pe';
 
@@ -82,10 +82,10 @@ BEGIN
 
     -- Solicitudes de sangre y pruebas de compatibilidad ------------------------
     INSERT INTO pacientes (dni, historia_clinica, nombres, fecha_nacimiento, sexo, grupo_abo, factor_rh,
-                           peso_kg, hemoglobina_gdl, telefono, correo, direccion) VALUES
-      ('48215637', 'HC-2026-00381', 'Marcos Effio Bravo',     '1979-04-16', 'M', 'A', 'positivo', 74.0, 8.9, '976123450', 'marcos.effio@gmail.com',     'Av. Nicolás Ayllón 2210, Ate'),
-      ('41987352', 'HC-2026-00355', 'Rosa Quinteros Farfán',  '1990-08-02', 'F', 'O', 'positivo', 66.5, 9.4, '975234561', 'rosa.quinteros@gmail.com',   'Jr. Huáscar 118, Vitarte'),
-      ('73456218', 'HC-2026-00312', 'Denis Ibarra León',      '1984-11-27', 'M', 'B', 'positivo', 81.0, 7.8, '974345672', 'denis.ibarra@gmail.com',     'Calle Los Cedros 45, Santa Anita');
+                           peso_kg, altura_cm, hemoglobina_gdl, telefono, correo, direccion) VALUES
+      ('48215637', 'HC-2026-00381', 'Marcos Effio Bravo',     '1979-04-16', 'M', 'A', 'positivo', 74.0, 174, 8.9, '976123450', 'marcos.effio@gmail.com',     'Av. Nicolás Ayllón 2210, Ate'),
+      ('41987352', 'HC-2026-00355', 'Rosa Quinteros Farfán',  '1990-08-02', 'F', 'O', 'positivo', 66.5, 162, 9.4, '975234561', 'rosa.quinteros@gmail.com',   'Jr. Huáscar 118, Vitarte'),
+      ('73456218', 'HC-2026-00312', 'Denis Ibarra León',      '1984-11-27', 'M', 'B', 'positivo', 81.0, 179, 7.8, '974345672', 'denis.ibarra@gmail.com',     'Calle Los Cedros 45, Santa Anita');
 
     INSERT INTO solicitudes_transfusionales (codigo, medico_id, servicio, paciente_id, diagnostico_cie10,
            diagnostico_texto, componente, prioridad, prioridad_texto, tipo_solicitud, fecha_liberacion_reserva, reserva_texto, estado, creado_en) VALUES
@@ -140,3 +140,239 @@ BEGIN
       ) AS a(correo, quien, accion, recurso, ip, cuando)
       JOIN usuarios u ON u.correo = a.correo;
 END $$;
+
+-- La siguiente historia parte del mayor número realmente guardado, sin repetirlo.
+SELECT setval(
+  'numero_historia_local',
+  greatest(coalesce((
+    SELECT max(right(historia_clinica, 5)::integer)
+      FROM pacientes
+     WHERE historia_clinica ~ ('^HC-' || to_char(current_date, 'YYYY') || '-[0-9]{5}$')
+  ), 0), 1),
+  true
+);
+
+-- =====================================================================
+-- Datos sintéticos relacionados para pruebas y demostración.
+-- Cada tabla recibe 60 filas identificables. Los UUID son deterministas,
+-- por lo que este script es idempotente y no duplica datos al reiniciar.
+-- =====================================================================
+DO $$
+DECLARE
+    i integer;
+    uid uuid;
+    did uuid;
+    bid uuid;
+    cid uuid;
+    hid uuid;
+    pid uuid;
+    sid uuid;
+    eid_origen uuid;
+    eid_destino uuid;
+    abo grupo_abo;
+    rh factor_rh;
+BEGIN
+  -- Primero se crean todos los establecimientos para que las solicitudes
+  -- posteriores puedan referenciar origen y destino sin depender del orden.
+  FOR i IN 1..60 LOOP
+    INSERT INTO establecimientos_red (id,nombre,red,convenio_descripcion,convenio_vigente_desde,convenio_vigente_hasta,es_sede_local)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:establecimiento:'||i),
+      'Establecimiento de prueba '||lpad(i::text,2,'0'),'Red Lima Este','Convenio sintético de intercambio',
+      date '2026-01-01',date '2027-12-31',false)
+    ON CONFLICT DO NOTHING;
+  END LOOP;
+
+  FOR i IN 1..60 LOOP
+    uid := uuid_generate_v5(uuid_nil(), 'banco50:usuario:' || i);
+    did := uuid_generate_v5(uuid_nil(), 'banco50:donante:' || i);
+    bid := uuid_generate_v5(uuid_nil(), 'banco50:unidad:' || i);
+    cid := uuid_generate_v5(uuid_nil(), 'banco50:camara:' || i);
+    hid := uuid_generate_v5(uuid_nil(), 'banco50:hemocomponente:' || i);
+    pid := uuid_generate_v5(uuid_nil(), 'banco50:paciente:' || i);
+    sid := uuid_generate_v5(uuid_nil(), 'banco50:solicitud:' || i);
+    eid_origen := uuid_generate_v5(uuid_nil(), 'banco50:establecimiento:' || i);
+    eid_destino := uuid_generate_v5(uuid_nil(), 'banco50:establecimiento:' || ((i % 60) + 1));
+    abo := (ARRAY['O','A','B','AB']::grupo_abo[])[(i % 4) + 1];
+    rh := CASE WHEN i % 5 = 0 THEN 'negativo'::factor_rh ELSE 'positivo'::factor_rh END;
+
+    INSERT INTO usuarios (id,dni,correo,contrasena_hash,nombres,apellidos,colegiatura,rol,activo,ultimo_acceso,creado_en)
+    VALUES (uid, (71000000+i)::text, 'usuario' || i || '@datos.hlev.gob.pe', crypt('Prueba2026',gen_salt('bf',4)),
+            'Usuario ' || lpad(i::text,2,'0'), 'Demostración', 'CMP-' || lpad(i::text,5,'0'),
+            (ARRAY['medico_solicitante','tecnologo_medico','jefe_banco_sangre','administrador']::rol_usuario[])[(i % 4)+1],
+            true, now()-(i||' hours')::interval, now()-(i||' days')::interval)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO uid FROM usuarios WHERE dni = (71000000+i)::text;
+
+    INSERT INTO camaras_refrigeracion (id,nombre,etiqueta,tipo,temp_min,temp_max,ultima_temperatura,ultima_lectura_en,fuera_de_rango,ultima_calibracion)
+    VALUES (cid,'Equipo de conservación '||lpad(i::text,2,'0'),'Equipo '||lpad(i::text,2,'0'),
+            CASE WHEN i%3=0 THEN 'congelacion' WHEN i%3=1 THEN 'refrigeracion' ELSE 'agitador' END,
+            CASE WHEN i%3=0 THEN -30 ELSE 2 END, CASE WHEN i%3=0 THEN -18 ELSE 6 END,
+            CASE WHEN i%3=0 THEN -24 ELSE 4 END,now()-(i||' minutes')::interval,false,current_date-(i%120))
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO cid FROM camaras_refrigeracion WHERE etiqueta = 'Equipo '||lpad(i::text,2,'0');
+
+    INSERT INTO donantes (id,dni,nombres,apellidos,fecha_nacimiento,sexo,grupo_abo,factor_rh,peso_kg,altura_cm,
+      hemoglobina_gdl,telefono,correo,direccion,antecedentes_viaje,campana,apto,diferido,consentimiento_firmado,
+      creado_en,tipo_donacion,total_donaciones,ultima_donacion,diferimiento_tipo,motivo_diferimiento,diferimiento_hasta)
+    VALUES (did,(72000000+i)::text,'Donante '||lpad(i::text,2,'0'),'Sintético Prueba',date '1980-01-01'+(i*83),
+      CASE WHEN i%2=0 THEN 'F' ELSE 'M' END,abo,rh,55+(i%35),155+(i%30),12.8+(i%20)/10.0,
+      (900000000+i)::text,'donante'||i||'@example.test','Dirección sintética '||i||', Lima','Ninguno','Campaña de prueba',
+      i%10<>0,i%10=0,true,now()-(i||' days')::interval,'voluntaria',i%8,current_date-(i%90),
+      CASE WHEN i%10=0 THEN 'Temporal' END,CASE WHEN i%10=0 THEN 'Evaluación temporal de demostración' END,
+      CASE WHEN i%10=0 THEN current_date+30 END)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO did FROM donantes WHERE dni = (72000000+i)::text;
+
+    INSERT INTO pacientes (id,dni,historia_clinica,nombres,fecha_nacimiento,sexo,grupo_abo,factor_rh,peso_kg,altura_cm,
+      hemoglobina_gdl,telefono,correo,direccion,creado_en)
+    VALUES (pid,(73000000+i)::text,'HC-2026-'||lpad((80000+i)::text,5,'0'),'Paciente '||lpad(i::text,2,'0')||' Sintético',
+      date '1975-01-01'+(i*97),CASE WHEN i%2=0 THEN 'F' ELSE 'M' END,abo,rh,50+(i%45),150+(i%40),8+(i%50)/10.0,
+      (910000000+i)::text,'paciente'||i||'@example.test','Domicilio sintético '||i||', Lima',now()-(i||' days')::interval)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO pid FROM pacientes WHERE dni = (73000000+i)::text;
+
+    INSERT INTO unidades_sangre (id,donante_id,responsable_id,din,din_check_digit,grupo_abo,factor_rh,fecha_extraccion,fecha_vencimiento,estado,creado_en)
+    VALUES (bid,did,uid,'WTEST26'||lpad(i::text,6,'0'),lpad((i%97)::text,2,'0'),abo,rh,
+      now()-(i||' days')::interval,current_date+35-(i%20),'disponible',now()-(i||' days')::interval)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO bid FROM unidades_sangre WHERE din = 'WTEST26'||lpad(i::text,6,'0');
+
+    INSERT INTO hemocomponentes (id,unidad_matriz_id,codigo_producto,din_derivado,tipo,volumen_ml,fecha_vencimiento,estado,camara_id,creado_en)
+    VALUES (hid,bid,'E3846V00','WTEST26'||lpad(i::text,6,'0')||'-01','concentrado_hematies',280,
+      current_date+35-(i%20),'disponible',cid,now()-(i||' days')::interval)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO hid FROM hemocomponentes WHERE din_derivado = 'WTEST26'||lpad(i::text,6,'0')||'-01';
+
+    INSERT INTO detalle_tamizaje (id,unidad_matriz_id,vih,hepatitis_b,hepatitis_c,sifilis,chagas,htlv,doble_digitacion,registrado_por,creado_en)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:tamizaje:'||i),bid,'no_reactivo','no_reactivo','no_reactivo','no_reactivo','no_reactivo','no_reactivo',true,uid,now()-(i||' days')::interval)
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO solicitudes_transfusionales (id,codigo,medico_id,servicio,paciente_id,diagnostico_cie10,diagnostico_texto,
+      componente,prioridad,prioridad_texto,tipo_solicitud,estado,creado_en)
+    VALUES (sid,'SOL-DATA-'||lpad(i::text,4,'0'),uid,'Medicina interna',pid,'D64.9','D64.9 — Anemia no especificada',
+      '1 unidad — Concentrado de Hematíes','rutina','Diferible','transfusional','compatible',now()-(i||' hours')::interval)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO sid FROM solicitudes_transfusionales WHERE codigo = 'SOL-DATA-'||lpad(i::text,4,'0');
+
+    INSERT INTO detalle_pruebas_cruzadas (id,solicitud_id,hemocomponente_id,prueba_mayor,prueba_menor,rastreo_anticuerpos,
+      compatible,validado_por,creado_en,muestra,grupo_paciente,resultado_mayor,resultado_menor,resultado_rai)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:prueba:'||i),sid,hid,true,true,true,true,uid,now()-(i||' hours')::interval,
+      'M-'||lpad(i::text,5,'0'),abo::text||CASE WHEN rh='positivo' THEN ' POS' ELSE ' NEG' END,'Sin aglutinación','Sin aglutinación','Negativo')
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO detalle_despachos (id,solicitud_id,hemocomponente_id,escaneo_hemocomponente,escaneo_pulsera_receptor,
+      autorizado_por,fecha_despacho,historia_clinica)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:despacho:'||i),sid,hid,true,true,uid,now()-(i||' hours')::interval,
+      'HC-2026-'||lpad((80000+i)::text,5,'0'))
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO eventos_hemovigilancia (id,hemocomponente_id,donante_id,paciente_id,tipo_evento,momento,descripcion,reportado_por,
+      creado_en,paciente,din_texto,severidad,estado)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:hemovigilancia:'||i),hid,did,pid,'Reacción febril no hemolítica','post-transfusional',
+      'Evento sintético para validación de trazabilidad',uid,now()-(i||' hours')::interval,'Paciente '||lpad(i::text,2,'0')||' Sintético',
+      'WTEST26'||lpad(i::text,6,'0')||'-01','amber:Leve','green:Resuelto')
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO establecimientos_red (id,nombre,red,convenio_descripcion,convenio_vigente_desde,convenio_vigente_hasta,es_sede_local)
+    VALUES (eid_origen,'Establecimiento de prueba '||lpad(i::text,2,'0'),'Red Lima Este','Convenio sintético de intercambio',
+      date '2026-01-01',date '2027-12-31',false)
+    ON CONFLICT DO NOTHING;
+    SELECT id INTO eid_origen FROM establecimientos_red WHERE nombre = 'Establecimiento de prueba '||lpad(i::text,2,'0');
+    SELECT id INTO eid_destino FROM establecimientos_red WHERE nombre = 'Establecimiento de prueba '||lpad(((i % 60)+1)::text,2,'0');
+
+    INSERT INTO solicitudes_interhospitalarias (id,establecimiento_origen_id,establecimiento_destino_id,grupo_abo,factor_rh,
+      tipo_hemocomponente,cantidad,estado,es_devolucion,creado_en,respondido_en,motivo)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:interhospitalaria:'||i),eid_origen,eid_destino,abo,rh,'concentrado_hematies',
+      1+(i%4),'aceptada',false,now()-(i||' hours')::interval,now()-(i||' hours')::interval+interval '20 minutes','Reposición de stock de prueba')
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO alertas (id,tipo,referencia_id,titulo,mensaje,atendida,creado_en)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:alerta:'||i),CASE WHEN i%2=0 THEN 'amber' ELSE 'blue' END,bid,
+      'Alerta sintética '||lpad(i::text,2,'0'),'Mensaje de validación para la unidad '||i,i%3=0,now()-(i||' hours')::interval)
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO auditoria_logs (id,usuario_id,accion,entidad,entidad_id,ip_terminal,detalle,creado_en)
+    VALUES (uuid_generate_v5(uuid_nil(),'banco50:auditoria:'||i),uid,'Validación de datos sintéticos','unidades_sangre',bid,
+      '10.20.4.'||(10+i),jsonb_build_object('origen','datos.sql','fila',i),now()-(i||' minutes')::interval)
+    ON CONFLICT DO NOTHING;
+  END LOOP;
+END $$;
+
+-- Los eventos importados de versiones antiguas solo guardaban el nombre del
+-- paciente. Para normalizarlos se crea una ficha clínica sintética y se enlaza
+-- cada evento; los nuevos eventos ya llegan con paciente_id desde la aplicación.
+DO $$
+DECLARE
+    e record;
+    n integer;
+    v_paciente uuid;
+BEGIN
+    FOR e IN
+        SELECT id, paciente, row_number() OVER (ORDER BY id) AS orden
+          FROM eventos_hemovigilancia
+         WHERE paciente_id IS NULL
+    LOOP
+        n := e.orden;
+        v_paciente := uuid_generate_v5(uuid_nil(), 'hemovigilancia-paciente:' || e.id::text);
+        INSERT INTO pacientes (id, dni, historia_clinica, nombres, fecha_nacimiento, sexo,
+                               grupo_abo, factor_rh, peso_kg, altura_cm, hemoglobina_gdl,
+                               telefono, correo, direccion)
+        VALUES (v_paciente,
+                (74000000 + n)::text,
+                'HC-2026-' || lpad((90000 + n)::text, 5, '0'),
+                coalesce(nullif(e.paciente, ''), 'Paciente histórico ' || n),
+                date '1980-01-01' + n,
+                CASE WHEN n % 2 = 0 THEN 'F' ELSE 'M' END,
+                'O', 'positivo', 70, 170, 10,
+                (920000000 + n)::text,
+                'hemovigilancia' || n || '@example.test',
+                'Registro histórico migrado')
+        ON CONFLICT DO NOTHING;
+
+        SELECT id INTO v_paciente
+          FROM pacientes
+         WHERE historia_clinica = 'HC-2026-' || lpad((90000 + n)::text, 5, '0');
+
+        UPDATE eventos_hemovigilancia
+           SET paciente_id = v_paciente,
+               registro_legacy = false
+         WHERE id = e.id;
+    END LOOP;
+END $$;
+
+SELECT setval('numero_historia_local', greatest((SELECT max(right(historia_clinica,5)::integer)
+  FROM pacientes WHERE historia_clinica ~ '^HC-[0-9]{4}-[0-9]{5}$'),1), true);
+
+-- Nombres ficticios para las fichas de demostración.
+DO $nombres_demo$
+DECLARE
+    i integer;
+    nombre text;
+    apellidos_demo text;
+BEGIN
+    FOR i IN 1..100 LOOP
+        nombre := (ARRAY['Elena','Miguel','Rosa','Andrés','Clara','Javier','Lucía','Diego','Paula','Luis'])[1 + i % 10];
+        apellidos_demo := (ARRAY['Quispe','Torres','Mendoza','Rojas','Salazar','Vargas','Paredes','Flores','Castro','Vega'])[1 + (i / 10) % 10] || ' Aguilar';
+        UPDATE donantes SET nombres = nombre, apellidos = apellidos_demo
+         WHERE dni = (72000000+i)::text AND apellidos = 'Sintético Prueba';
+        UPDATE usuarios SET nombres = nombre, apellidos = apellidos_demo
+         WHERE dni = (71000000+i)::text AND apellidos = 'Demostración'
+           AND correo = 'usuario' || i || '@datos.hlev.gob.pe';
+        UPDATE usuarios u
+           SET correo = translate(lower(regexp_replace(trim(u.nombres || ' ' || u.apellidos),
+                               '[[:space:]]+', '.', 'g')), 'áéíóúüñ', 'aeiouun') || '@example.test'
+         WHERE u.dni = (71000000+i)::text AND u.correo = 'usuario' || i || '@datos.hlev.gob.pe';
+        UPDATE pacientes SET nombres = nombre || ' ' || apellidos_demo
+         WHERE dni = (73000000+i)::text AND nombres ~ '^Paciente [0-9]+ Sintético$';
+        UPDATE pacientes SET nombres = nombre || ' ' || apellidos_demo
+         WHERE correo = 'hemovigilancia' || i || '@example.test'
+           AND direccion = 'Registro histórico migrado'
+           AND (nombres ~ '^Paciente ([0-9]+ Sintético|histórico [0-9]+)$'
+                OR nombres ~ ',[[:space:]]*[[:alpha:]]\.$');
+    END LOOP;
+    UPDATE eventos_hemovigilancia e SET paciente = p.nombres
+      FROM pacientes p WHERE p.id = e.paciente_id
+       AND (e.paciente ~ '^Paciente [0-9]+ Sintético$'
+            OR (p.direccion = 'Registro histórico migrado'
+                AND e.paciente ~ ',[[:space:]]*[[:alpha:]]\.$'));
+END $nombres_demo$;

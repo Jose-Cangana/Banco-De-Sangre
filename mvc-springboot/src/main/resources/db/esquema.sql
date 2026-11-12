@@ -95,6 +95,11 @@ CREATE TABLE IF NOT EXISTS alertas (
     creado_en     timestamptz  NOT NULL DEFAULT now()
 );
 
+ALTER TABLE auditoria_logs ADD COLUMN IF NOT EXISTS evento_general boolean NOT NULL DEFAULT true;
+UPDATE auditoria_logs SET evento_general = (entidad_id IS NULL);
+ALTER TABLE alertas ADD COLUMN IF NOT EXISTS alcance_global boolean NOT NULL DEFAULT true;
+UPDATE alertas SET alcance_global = (referencia_id IS NULL);
+
 -- ---------------------------------------------------------------------
 -- 3. Donantes (incluye sus donaciones: total, última y tipo)
 -- ---------------------------------------------------------------------
@@ -194,6 +199,8 @@ CREATE TABLE IF NOT EXISTS hemocomponentes (
 -- 5. Solicitudes, pruebas cruzadas, detalle_despachos y hemovigilancia
 -- ---------------------------------------------------------------------
 -- Pacientes: un registro por historia clínica; las solicitudes lo referencian (no repiten nombre ni DNI)
+ALTER TABLE donantes ADD COLUMN IF NOT EXISTS altura_cm numeric(5,2) CHECK (altura_cm BETWEEN 100 AND 250);
+CREATE SEQUENCE IF NOT EXISTS numero_historia_local START 50000 MAXVALUE 99999;
 CREATE TABLE IF NOT EXISTS pacientes (
     id                uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     dni               varchar(8) NOT NULL UNIQUE,
@@ -204,6 +211,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
     grupo_abo         grupo_abo,                -- nulo solo mientras el laboratorio no confirma el grupo
     factor_rh         factor_rh,
     peso_kg           numeric(5,2) NOT NULL,
+    altura_cm         numeric(5,2) NOT NULL CHECK (altura_cm BETWEEN 100 AND 250),
     hemoglobina_gdl   numeric(4,1) NOT NULL,
     telefono          varchar(9)   NOT NULL,
     correo            varchar(150) NOT NULL,
@@ -261,6 +269,8 @@ CREATE TABLE IF NOT EXISTS detalle_despachos (
     historia_clinica          varchar(30)                    -- AJUSTE: HC leída de la pulsera
 );
 
+ALTER TABLE detalle_despachos ADD COLUMN IF NOT EXISTS receptor_id varchar(40);
+
 CREATE TABLE IF NOT EXISTS eventos_hemovigilancia (
     id                uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     hemocomponente_id uuid REFERENCES hemocomponentes(id),
@@ -276,6 +286,16 @@ CREATE TABLE IF NOT EXISTS eventos_hemovigilancia (
     severidad         varchar(30) NOT NULL DEFAULT 'amber:Leve',
     estado            varchar(40) NOT NULL DEFAULT 'amber:En investigación'
 );
+
+-- Relación normalizada con el paciente. Los campos paciente y din_texto se
+-- conservan como instantáneas clínicas para que el historial no cambie si se
+-- corrige posteriormente un nombre o código visible.
+ALTER TABLE eventos_hemovigilancia
+    ADD COLUMN IF NOT EXISTS paciente_id uuid REFERENCES pacientes(id);
+ALTER TABLE eventos_hemovigilancia
+    ADD COLUMN IF NOT EXISTS registro_legacy boolean NOT NULL DEFAULT false;
+UPDATE eventos_hemovigilancia SET registro_legacy = true WHERE paciente_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_hemovig_paciente ON eventos_hemovigilancia (paciente_id);
 
 -- ---------------------------------------------------------------------
 -- 6. Red interhospitalaria
@@ -329,16 +349,27 @@ CREATE INDEX IF NOT EXISTS idx_interhosp_destino      ON solicitudes_interhospit
 -- ---------------------------------------------------------------------
 DO $$
 BEGIN
+    -- Bases de versiones anteriores: completar columnas agregadas posteriormente.
+    ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS colegiatura varchar(30);
     -- Bases ya creadas: se agregan las columnas nuevas de pacientes (aceptan nulo solo en filas antiguas)
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS fecha_nacimiento date;
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS sexo char(1);
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS grupo_abo grupo_abo;
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS factor_rh factor_rh;
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS peso_kg numeric(5,2);
+    ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS altura_cm numeric(5,2) CHECK (altura_cm BETWEEN 100 AND 250);
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS hemoglobina_gdl numeric(4,1);
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS telefono varchar(9);
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS correo varchar(150);
     ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS direccion text;
+    UPDATE donantes
+       SET altura_cm = 155 + mod(abs(hashtext(dni)), 31)
+     WHERE altura_cm IS NULL;
+    UPDATE pacientes
+       SET altura_cm = 150 + mod(abs(hashtext(dni)), 41)
+     WHERE altura_cm IS NULL;
+    ALTER TABLE donantes ALTER COLUMN altura_cm SET NOT NULL;
+    ALTER TABLE pacientes ALTER COLUMN altura_cm SET NOT NULL;
     -- Donantes ya guardados: se llenan los datos que quedaron vacíos
     UPDATE donantes SET diferimiento_tipo = 'Temporal'
      WHERE diferido AND diferimiento_tipo IS NULL;
@@ -381,6 +412,48 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_diferido_con_motivo') THEN
         ALTER TABLE donantes ADD CONSTRAINT ck_diferido_con_motivo
             CHECK (NOT diferido OR (motivo_diferimiento IS NOT NULL AND diferimiento_tipo IS NOT NULL));
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_diferimiento_coherente') THEN
+        ALTER TABLE donantes ADD CONSTRAINT ck_diferimiento_coherente CHECK (
+            (NOT diferido AND apto AND motivo_diferimiento IS NULL AND diferimiento_tipo IS NULL AND diferimiento_hasta IS NULL)
+            OR
+            (diferido AND NOT apto AND btrim(motivo_diferimiento) <> '' AND (
+                (diferimiento_tipo = 'Temporal' AND diferimiento_hasta IS NOT NULL)
+                OR (diferimiento_tipo = 'Permanente' AND diferimiento_hasta IS NULL)
+            ))
+        ) NOT VALID;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_camara_lectura_completa') THEN
+        ALTER TABLE camaras_refrigeracion ADD CONSTRAINT ck_camara_lectura_completa CHECK (
+            (ultima_temperatura IS NULL AND ultima_lectura_en IS NULL AND NOT fuera_de_rango)
+            OR (ultima_temperatura IS NOT NULL AND ultima_lectura_en IS NOT NULL)
+        ) NOT VALID;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_interhospitalaria_respuesta') THEN
+        ALTER TABLE solicitudes_interhospitalarias ADD CONSTRAINT ck_interhospitalaria_respuesta CHECK (
+            (estado = 'pendiente' AND respondido_en IS NULL)
+            OR (estado <> 'pendiente' AND respondido_en IS NOT NULL)
+        ) NOT VALID;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_hemovigilancia_paciente') THEN
+        ALTER TABLE eventos_hemovigilancia ADD CONSTRAINT ck_hemovigilancia_paciente CHECK (
+            paciente_id IS NOT NULL OR registro_legacy
+        );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_auditoria_referencia') THEN
+        ALTER TABLE auditoria_logs ADD CONSTRAINT ck_auditoria_referencia CHECK (
+            entidad_id IS NOT NULL OR evento_general
+        );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_alerta_referencia') THEN
+        ALTER TABLE alertas ADD CONSTRAINT ck_alerta_referencia CHECK (
+            referencia_id IS NOT NULL OR alcance_global
+        );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_hemocomponente_camara') THEN
+        ALTER TABLE hemocomponentes ADD CONSTRAINT ck_hemocomponente_camara CHECK (
+            camara_id IS NOT NULL OR estado IN ('despachado','incinerado','fraccionado')
+        ) NOT VALID;
     END IF;
 END
 $$;

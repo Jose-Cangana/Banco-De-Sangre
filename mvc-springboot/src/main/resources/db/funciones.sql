@@ -183,7 +183,7 @@ BEGIN
 
     WHEN 'donantes' THEN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
-                   'nombre', d.apellidos || CASE WHEN d.nombres <> '' THEN ', ' || d.nombres ELSE '' END,
+                   'nombre', concat_ws(' ', nullif(btrim(d.nombres), ''), nullif(btrim(d.apellidos), '')),
                    'dni', d.dni,
                    'abo', grupo_a_texto(d.grupo_abo, d.factor_rh),
                    'tipo', tipo_donacion_a_texto(d.tipo_donacion),
@@ -196,7 +196,7 @@ BEGIN
                    'tipoDiferimiento', d.diferimiento_tipo,
                    'vigenciaDiferimiento', fecha_texto(d.diferimiento_hasta),
                    'sexo', d.sexo, 'telefono', d.telefono, 'correo', d.correo, 'direccion', d.direccion,
-                   'fechaNacimiento', fecha_texto(d.fecha_nacimiento), 'pesoKg', d.peso_kg,
+                   'fechaNacimiento', fecha_texto(d.fecha_nacimiento), 'pesoKg', d.peso_kg, 'alturaCm', d.altura_cm,
                    'hemoglobina', d.hemoglobina_gdl, 'antecedentes', d.antecedentes_viaje,
                    'campana', d.campana, 'consentimiento', d.consentimiento_firmado
                ) ORDER BY d.creado_en DESC, d.apellidos), '[]'::jsonb)
@@ -220,7 +220,7 @@ BEGIN
 
     WHEN 'temperaturas' THEN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
-                   'camara', c.nombre,
+                   'camara', c.nombre, 'etiqueta', c.etiqueta,
                    'rango', trim_scale(c.temp_min)::text || '°C' || CASE WHEN c.temp_min < 0 THEN ' a ' ELSE ' – ' END || trim_scale(c.temp_max)::text || '°C',
                    'actual', c.ultima_temperatura,
                    'ok', NOT c.fuera_de_rango
@@ -231,13 +231,15 @@ BEGIN
         -- Una fila por marcador, como la muestra la pantalla; las dos digitaciones son iguales
         -- porque solo se guarda el tamizaje cuando coinciden.
         SELECT coalesce(jsonb_agg(jsonb_build_object(
-                   'din', u.din, 'marcador', m.marcador, 'dig1', m.res, 'dig2', m.res, 'resultado', m.res,
+                   'din', u.din, 'donanteNombre', nullif(concat_ws(' ', nullif(btrim(d.nombres), ''), nullif(btrim(d.apellidos), '')), ''),
+                   'marcador', m.marcador, 'dig1', m.res, 'dig2', m.res, 'resultado', m.res,
                    'digitador', usuario_texto(t.registrado_por),
                    'fecha', fecha_hora_texto(t.creado_en)
                ) ORDER BY t.creado_en, u.din, m.orden), '[]'::jsonb)
           INTO r
           FROM detalle_tamizaje t
           JOIN unidades_sangre u ON u.id = t.unidad_matriz_id
+          LEFT JOIN donantes d ON d.id = u.donante_id
           CROSS JOIN LATERAL (VALUES
               (1, 'VIH 1/2',              resultado_a_texto(t.vih)),
               (2, 'Hepatitis B (HBsAg)',  resultado_a_texto(t.hepatitis_b)),
@@ -251,7 +253,7 @@ BEGIN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
                    'nombre', pa.nombres, 'dni', coalesce(pa.dni, ''), 'hc', pa.historia_clinica,
                    'fechaNacimiento', fecha_texto(pa.fecha_nacimiento), 'sexo', pa.sexo,
-                   'abo', grupo_a_texto(pa.grupo_abo, pa.factor_rh), 'pesoKg', pa.peso_kg,
+                   'abo', grupo_a_texto(pa.grupo_abo, pa.factor_rh), 'pesoKg', pa.peso_kg, 'alturaCm', pa.altura_cm,
                    'hemoglobina', pa.hemoglobina_gdl, 'telefono', pa.telefono, 'correo', pa.correo,
                    'direccion', pa.direccion,
                    'solicitudes', coalesce(s.total, 0),
@@ -267,13 +269,15 @@ BEGIN
     WHEN 'solicitudes' THEN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
                    'id', s.codigo, 'paciente', pa.nombres, 'dni', pa.dni, 'hc', pa.historia_clinica,
+                   'medico', concat_ws(' ', med.nombres, med.apellidos),
                    'servicio', s.servicio, 'cie10', coalesce(s.diagnostico_texto, s.diagnostico_cie10),
                    'componente', s.componente, 'prioridad', coalesce(s.prioridad_texto, s.prioridad::text),
                    'tipo', s.tipo_solicitud,
                    'reservaFecha', coalesce(s.reserva_texto, fecha_texto(s.fecha_liberacion_reserva::date)),
                    'estado', s.estado
                ) ORDER BY s.creado_en DESC, s.codigo DESC), '[]'::jsonb)
-          INTO r FROM solicitudes_transfusionales s JOIN pacientes pa ON pa.id = s.paciente_id;
+          INTO r FROM solicitudes_transfusionales s JOIN pacientes pa ON pa.id = s.paciente_id
+                 JOIN usuarios med ON med.id = s.medico_id;
 
     WHEN 'pruebas' THEN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
@@ -296,7 +300,8 @@ BEGIN
     WHEN 'hemovigilancia' THEN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
                    'id', e.id, 'fecha', to_char(e.creado_en AT TIME ZONE 'America/Lima', 'DD/MM/YYYY'),
-                   'paciente', e.paciente, 'reaccion', e.tipo_evento, 'din', coalesce(e.din_texto, '—'),
+                   'paciente', coalesce((SELECT p.nombres FROM pacientes p WHERE p.id = e.paciente_id), e.paciente),
+                   'reaccion', e.tipo_evento, 'din', coalesce(e.din_texto, '—'),
                    'severidad', e.severidad, 'estado', e.estado
                ) ORDER BY e.creado_en DESC), '[]'::jsonb)
           INTO r FROM eventos_hemovigilancia e;
@@ -403,10 +408,19 @@ BEGIN
 
     -- 2. Donantes ------------------------------------------------------
     IF p ? 'donantes' THEN
+        IF EXISTS (
+            SELECT 1 FROM jsonb_to_recordset(p->'donantes')
+                 AS x(dni text, estado text, "alturaCm" numeric, "aptitudConfirmada" boolean)
+            WHERE NOT EXISTS (SELECT 1 FROM donantes d WHERE d.dni = x.dni)
+              AND (x."alturaCm" IS NULL OR x."alturaCm" NOT BETWEEN 100 AND 250
+                   OR (split_part(x.estado, ':', 1) = 'green' AND x."aptitudConfirmada" IS DISTINCT FROM true))
+        ) THEN
+            RAISE EXCEPTION 'Los donantes nuevos requieren altura y confirmación profesional para registrarse como aptos';
+        END IF;
         INSERT INTO donantes (dni, nombres, apellidos, grupo_abo, factor_rh, tipo_donacion, total_donaciones,
                               ultima_donacion, apto, diferido, diferimiento_tipo, motivo_diferimiento,
                               diferimiento_hasta, fecha_nacimiento, sexo, peso_kg, hemoglobina_gdl, telefono, correo,
-                              direccion, antecedentes_viaje, campana, consentimiento_firmado)
+                              direccion, antecedentes_viaje, campana, consentimiento_firmado, altura_cm)
         SELECT x.dni, nombres_de(x.nombre), apellidos_de(x.nombre), abo_de_texto(x.abo), rh_de_texto(x.abo),
                tipo_donacion_de_texto(x.tipo), coalesce(x.donaciones, 0), texto_a_fecha(x."ultimaDonacion"),
                split_part(x.estado, ':', 1) = 'green', split_part(x.estado, ':', 1) <> 'green',
@@ -416,12 +430,12 @@ BEGIN
                CASE WHEN split_part(x.estado, ':', 1) = 'amber' THEN texto_a_fecha(x."vigenciaDiferimiento") END,
                texto_a_fecha(x."fechaNacimiento"), x.sexo, x."pesoKg", x.hemoglobina, x.telefono, x.correo,
                x.direccion, x.antecedentes,
-               coalesce(nullif(x.campana, ''), 'Donación directa'), coalesce(x.consentimiento, false)
+               coalesce(nullif(x.campana, ''), 'Donación directa'), coalesce(x.consentimiento, false), x."alturaCm"
           FROM jsonb_to_recordset(p->'donantes')
                AS x(nombre text, dni text, abo text, tipo text, "ultimaDonacion" text, donaciones int, estado text,
                     "motivoDiferimiento" text, "vigenciaDiferimiento" text, "fechaNacimiento" text,
                     "pesoKg" numeric, antecedentes text, consentimiento boolean, sexo text, telefono text,
-                    correo text, direccion text, hemoglobina numeric, campana text)
+                    correo text, direccion text, hemoglobina numeric, campana text, "alturaCm" numeric)
          WHERE coalesce(x.dni, '') <> ''
         ON CONFLICT (dni) DO UPDATE
            SET grupo_abo = EXCLUDED.grupo_abo, factor_rh = EXCLUDED.factor_rh, tipo_donacion = EXCLUDED.tipo_donacion,
@@ -429,6 +443,7 @@ BEGIN
                apto = EXCLUDED.apto, diferido = EXCLUDED.diferido, diferimiento_tipo = EXCLUDED.diferimiento_tipo,
                motivo_diferimiento = EXCLUDED.motivo_diferimiento, diferimiento_hasta = EXCLUDED.diferimiento_hasta,
                fecha_nacimiento = EXCLUDED.fecha_nacimiento, sexo = EXCLUDED.sexo, peso_kg = EXCLUDED.peso_kg,
+               altura_cm = coalesce(EXCLUDED.altura_cm, donantes.altura_cm),
                hemoglobina_gdl = EXCLUDED.hemoglobina_gdl, telefono = EXCLUDED.telefono, correo = EXCLUDED.correo,
                direccion = EXCLUDED.direccion, antecedentes_viaje = EXCLUDED.antecedentes_viaje,
                campana = EXCLUDED.campana,
@@ -508,17 +523,17 @@ BEGIN
     -- 5. Solicitudes de sangre -----------------------------------------
     IF p ? 'pacientes' THEN
         INSERT INTO pacientes (dni, historia_clinica, nombres, fecha_nacimiento, sexo, grupo_abo, factor_rh,
-                               peso_kg, hemoglobina_gdl, telefono, correo, direccion)
+                               peso_kg, altura_cm, hemoglobina_gdl, telefono, correo, direccion)
         SELECT x.dni, x.hc, x.paciente, texto_a_fecha(x."fechaNacimiento"), x.sexo, abo_de_texto(x.abo), rh_de_texto(x.abo),
-               x."pesoKg", x.hemoglobina, x.telefono, x.correo, x.direccion
+               x."pesoKg", x."alturaCm", x.hemoglobina, x.telefono, x.correo, x.direccion
           FROM jsonb_to_recordset(p->'pacientes')
-               AS x(dni text, hc text, paciente text, "fechaNacimiento" text, sexo text, abo text, "pesoKg" numeric,
+               AS x(dni text, hc text, paciente text, "fechaNacimiento" text, sexo text, abo text, "pesoKg" numeric, "alturaCm" numeric,
                     hemoglobina numeric, telefono text, correo text, direccion text)
          WHERE coalesce(x.hc, '') <> ''
         ON CONFLICT (historia_clinica) DO UPDATE
            SET dni = EXCLUDED.dni, nombres = EXCLUDED.nombres, fecha_nacimiento = EXCLUDED.fecha_nacimiento,
                sexo = EXCLUDED.sexo, grupo_abo = EXCLUDED.grupo_abo, factor_rh = EXCLUDED.factor_rh,
-               peso_kg = EXCLUDED.peso_kg, hemoglobina_gdl = EXCLUDED.hemoglobina_gdl, telefono = EXCLUDED.telefono,
+               peso_kg = EXCLUDED.peso_kg, altura_cm = EXCLUDED.altura_cm, hemoglobina_gdl = EXCLUDED.hemoglobina_gdl, telefono = EXCLUDED.telefono,
                correo = EXCLUDED.correo, direccion = EXCLUDED.direccion;
     END IF;
 
@@ -583,14 +598,15 @@ BEGIN
 
     -- 7. Hemovigilancia -------------------------------------------------
     IF p ? 'hemovigilancia' THEN
-        INSERT INTO eventos_hemovigilancia (id, hemocomponente_id, donante_id, tipo_evento, reportado_por,
-                                            paciente, din_texto, severidad, estado)
-        SELECT x.id::uuid, h.id, dn.id, x.reaccion, v_actor, coalesce(nullif(x.paciente, ''), '—'), coalesce(nullif(x.din, ''), '—'), x.severidad, x.estado
+        INSERT INTO eventos_hemovigilancia (id, hemocomponente_id, donante_id, paciente_id, tipo_evento, reportado_por,
+                                            paciente, din_texto, severidad, estado, registro_legacy)
+        SELECT x.id::uuid, h.id, dn.id, pa.id, x.reaccion, v_actor, coalesce(nullif(x.paciente, ''), '—'), coalesce(nullif(x.din, ''), '—'), x.severidad, x.estado, false
           FROM jsonb_to_recordset(p->'hemovigilancia')
-               AS x(id text, paciente text, reaccion text, din text, severidad text, estado text)
+               AS x(id text, paciente text, reaccion text, din text, severidad text, estado text, "dniPaciente" text, hc text)
           LEFT JOIN hemocomponentes h ON h.din_derivado = x.din
           LEFT JOIN unidades_sangre u ON u.id = h.unidad_matriz_id
           LEFT JOIN donantes dn ON dn.id = u.donante_id
+          JOIN pacientes pa ON pa.dni = x."dniPaciente" AND pa.historia_clinica = x.hc
          WHERE coalesce(x.id, '') <> ''
         ON CONFLICT (id) DO UPDATE SET severidad = EXCLUDED.severidad, estado = EXCLUDED.estado;
     END IF;
@@ -619,27 +635,33 @@ BEGIN
 
     -- 9. Novedades que solo se agregan ----------------------------------
     IF p ? 'auditNuevos' THEN
-        INSERT INTO auditoria_logs (usuario_id, accion, entidad, ip_terminal, detalle, creado_en)
+        INSERT INTO auditoria_logs (usuario_id, accion, entidad, ip_terminal, detalle, creado_en, evento_general)
         SELECT v_actor, x.accion, x.recurso, x.ip, jsonb_build_object('usuario', x.usuario),
-               clock_timestamp() + (x.n * interval '1 microsecond')
+               clock_timestamp() + (x.n * interval '1 microsecond'), true
           FROM ROWS FROM (jsonb_to_recordset(p->'auditNuevos') AS (usuario text, accion text, recurso text, ip text))
                WITH ORDINALITY AS x(usuario, accion, recurso, ip, n);
     END IF;
 
     IF p ? 'alertasNuevas' THEN
-        INSERT INTO alertas (tipo, titulo, mensaje, creado_en)
-        SELECT coalesce(x.color, 'blue'), x.titulo, coalesce(x.detalle, ''), clock_timestamp() + (x.n * interval '1 microsecond')
+        INSERT INTO alertas (tipo, titulo, mensaje, creado_en, alcance_global)
+        SELECT coalesce(x.color, 'blue'), x.titulo, coalesce(x.detalle, ''), clock_timestamp() + (x.n * interval '1 microsecond'), true
           FROM ROWS FROM (jsonb_to_recordset(p->'alertasNuevas') AS (color text, titulo text, detalle text))
                WITH ORDINALITY AS x(color, titulo, detalle, n);
     END IF;
 
     IF p ? 'despachosNuevos' THEN
+        IF EXISTS (
+            SELECT 1 FROM jsonb_to_recordset(p->'despachosNuevos') AS x("receptorId" text)
+             WHERE coalesce(x."receptorId", '') !~ '^[A-Za-z0-9][A-Za-z0-9._/-]{1,39}$'
+        ) THEN
+            RAISE EXCEPTION 'Indica un ID institucional válido del médico o encargado que recibe';
+        END IF;
         INSERT INTO detalle_despachos (solicitud_id, hemocomponente_id, escaneo_hemocomponente, escaneo_pulsera_receptor,
-                               autorizado_por, historia_clinica)
+                               autorizado_por, historia_clinica, receptor_id)
         SELECT (SELECT s.id FROM solicitudes_transfusionales s JOIN pacientes pa ON pa.id = s.paciente_id
                  WHERE pa.historia_clinica = x.hc ORDER BY s.creado_en DESC LIMIT 1),
-               h.id, true, true, v_actor, x.hc
-          FROM jsonb_to_recordset(p->'despachosNuevos') AS x(din text, hc text)
+               h.id, true, true, v_actor, x.hc, x."receptorId"
+          FROM jsonb_to_recordset(p->'despachosNuevos') AS x(din text, hc text, "receptorId" text)
           JOIN hemocomponentes h ON h.din_derivado = x.din;
     END IF;
 END

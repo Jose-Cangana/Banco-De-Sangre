@@ -10,6 +10,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import pe.edu.utp.bancosangre.service.BancoSangreService;
 import pe.edu.utp.bancosangre.model.Rol;
 import pe.edu.utp.bancosangre.model.Vista;
+import pe.edu.utp.bancosangre.dao.jdbc.DashboardDao;
 
 /**
  * Controlador de navegacion entre las 12 pantallas del sistema.
@@ -24,9 +25,11 @@ import pe.edu.utp.bancosangre.model.Vista;
 public class AppController {
 
     private final BancoSangreService servicio;
+    private final DashboardDao dashboard;
 
-    public AppController(BancoSangreService servicio) {
+    public AppController(BancoSangreService servicio, DashboardDao dashboard) {
         this.servicio = servicio;
+        this.dashboard = dashboard;
     }
 
     /**
@@ -78,11 +81,6 @@ public class AppController {
     @GetMapping("/interhospitalario")
     public String interhospitalario(HttpSession session, Model model, RedirectAttributes ra) {
         return renderVista("interhospitalario", session, model, ra);
-    }
-
-    @GetMapping("/movil")
-    public String movil(HttpSession session, Model model, RedirectAttributes ra) {
-        return renderVista("movil", session, model, ra);
     }
 
     @GetMapping("/hemovigilancia")
@@ -141,6 +139,7 @@ public class AppController {
     private void cargarDatos(String clave, Model model) {
         switch (clave) {
             case "dashboard" -> {
+                model.addAttribute("metricas", dashboard.consultar());
                 model.addAttribute("aboGroups", servicio.listar("stock"));
                 model.addAttribute("alertas", servicio.listar("alertas"));
             }
@@ -190,13 +189,6 @@ public class AppController {
                 model.addAttribute("solicitudes", servicio.listar("solicitudes"));
                 model.addAttribute("hemovigilancia", servicio.listar("hemovigilancia"));
                 model.addAttribute("auditLog", servicio.listar("auditoria"));
-            }
-            case "movil" -> {
-                // La app móvil espeja los mismos datos reales del panel web
-                // (stock crítico, alertas y solicitudes activas), no datos aparte.
-                model.addAttribute("aboGroups", servicio.listar("stock"));
-                model.addAttribute("alertas", servicio.listar("alertas"));
-                model.addAttribute("solicitudes", servicio.listar("solicitudes"));
             }
             default -> { /* sin datos de ejemplo asociados */ }
         }

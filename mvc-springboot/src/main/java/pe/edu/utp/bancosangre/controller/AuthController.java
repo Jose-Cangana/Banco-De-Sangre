@@ -1,11 +1,13 @@
 package pe.edu.utp.bancosangre.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import pe.edu.utp.bancosangre.security.LimitadorIntentos;
 import pe.edu.utp.bancosangre.service.BancoSangreService;
 import pe.edu.utp.bancosangre.model.Rol;
 
@@ -23,9 +25,11 @@ import java.util.Map;
 public class AuthController {
 
     private final BancoSangreService servicio;
+    private final LimitadorIntentos limitador;
 
-    public AuthController(BancoSangreService servicio) {
+    public AuthController(BancoSangreService servicio, LimitadorIntentos limitador) {
         this.servicio = servicio;
+        this.limitador = limitador;
     }
 
     public static final String SESSION_ROL = "rolActual";
@@ -46,10 +50,13 @@ public class AuthController {
     @PostMapping("/login")
     public String iniciarSesion(@RequestParam("usuario") String usuario,
                                  @RequestParam(value = "clave", defaultValue = "") String clave,
-                                 HttpSession session, Model model) {
+                                 HttpServletRequest request, HttpSession session, Model model) {
         String u = usuario == null ? "" : usuario.trim().toLowerCase();
+        String claveLimite = u + "|" + request.getRemoteAddr();
         String error = null;
-        if (!(u.matches("^\\d{8}$") || u.matches("^[a-z0-9._-]+@hlev\\.gob\\.pe$"))) {
+        if (limitador.bloqueado(claveLimite)) {
+            error = "Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar";
+        } else if (!(u.matches("^\\d{8}$") || u.matches("^[a-z0-9._-]+@hlev\\.gob\\.pe$"))) {
             error = "Ingresa tu DNI (8 dígitos) o tu correo institucional @hlev.gob.pe";
         } else if (clave.length() < 6) {
             error = "La contraseña debe tener al menos 6 caracteres";
@@ -58,6 +65,7 @@ public class AuthController {
         if (error == null) {
             cuenta = servicio.autenticar(u, clave);
             if (cuenta == null) {
+                limitador.registrarFallo(claveLimite);
                 error = "Usuario o contraseña incorrectos, o la cuenta está desactivada";
             }
         }
@@ -65,14 +73,19 @@ public class AuthController {
             model.addAttribute("errorAcceso", error);
             return "login";
         }
+        limitador.limpiar(claveLimite);
+        // Nuevo identificador de sesión tras autenticarse (evita la fijación de sesión)
+        request.changeSessionId();
         String correo = String.valueOf(cuenta.get("correo"));
+        session.setMaxInactiveInterval(30 * 60);
         session.setAttribute(SESSION_ROL, Rol.desdeEtiqueta(String.valueOf(cuenta.get("rol"))));
         session.setAttribute(SESSION_USUARIO, correo);
         try { servicio.registrarAcceso(correo); } catch (Exception ignorada) { /* el acceso no debe fallar por esto */ }
         return "redirect:/dashboard";
     }
 
-    @GetMapping("/logout")
+    /** Por POST: un enlace o imagen de otro sitio no puede cerrar la sesión del usuario. */
+    @PostMapping("/logout")
     public String cerrarSesion(HttpSession session) {
         session.invalidate();
         return "redirect:/login";

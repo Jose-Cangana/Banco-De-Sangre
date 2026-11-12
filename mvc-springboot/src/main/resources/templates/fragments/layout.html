@@ -14,6 +14,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
   <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+  <link rel="stylesheet" th:href="@{/css/interfaz.css}"/>
+  <script defer th:src="@{/js/interfaz.js}"></script>
+  <script defer th:src="@{/js/roles.js}"></script>
 </th:block>
 </head>
 <body>
@@ -25,7 +28,7 @@
      propia plantilla que llama a este layout).
 
      El menu lateral se genera recorriendo el catalogo de Vistas (Modelo)
-     y aplica el RBAC de RF-02 con rol.puedeVer(...) del lado del
+     y aplica el RBAC de  con rol.puedeVer(...) del lado del
      servidor, en vez de esconder botones por JavaScript como en el
      versión original.
      ============================================================ */-->
@@ -53,7 +56,9 @@
       <div class="user-name" th:text="${usuario}">Usuario</div>
       <div class="user-role" th:text="${rol.etiqueta}">Rol</div>
     </div>
-    <a class="logout" th:href="@{/logout}" style="text-decoration:none; display:block; text-align:center;">← Cerrar sesión</a>
+    <form th:action="@{/logout}" method="post" style="margin:0;">
+      <button class="logout" type="submit" style="width:100%; background:none; border:none; cursor:pointer; font:inherit; display:block; text-align:center;">← Cerrar sesión</button>
+    </form>
   </aside>
 
   <div class="main">
@@ -91,8 +96,8 @@
        tabla se llenaba ni las pestanas cambiaban, porque las funciones de
        app.js -y hasta la variable "state"- no existian en la pagina). */-->
   <script>window.PERSISTENCIA = 'servidor';</script>
-  <script th:src="@{/js/validacion.js}"></script>
-  <script th:src="@{/js/app.js}"></script>
+  <script th:src="@{/js/validacion.js(v=20261115)}"></script>
+  <script th:src="@{/js/app.js(v=20261115-2)}"></script>
   <script th:inline="javascript">
     state.currentUser = /*[[${usuario}]]*/ 'Usuario';
     state.currentRole = /*[[${rol.etiqueta}]]*/ 'Rol';

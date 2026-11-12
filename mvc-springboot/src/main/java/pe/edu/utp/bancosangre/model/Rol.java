@@ -25,14 +25,14 @@ public enum Rol {
     }
 
     private static final Map<Rol, List<String>> VISTAS_PERMITIDAS = Map.of(
-            MEDICO_SOLICITANTE, List.of("dashboard", "pacientes", "solicitudes", "movil"),
+            MEDICO_SOLICITANTE, List.of("dashboard", "pacientes", "solicitudes"),
             TECNOLOGO_MEDICO, List.of("dashboard", "inventario", "donantes", "pacientes", "etiquetado", "solicitudes", "hemovigilancia"),
             // El Jefe de Banco de Sangre opera el area tecnica y logistica, pero NO ve Auditoria.
             JEFE_BANCO_SANGRE, List.of("dashboard", "inventario", "donantes", "pacientes", "etiquetado", "solicitudes",
-                    "hemovigilancia", "despacho", "interhospitalario", "movil", "reportes"),
+                    "hemovigilancia", "despacho", "interhospitalario", "reportes"),
             // El Administrador ve todas las pantallas del sistema.
             ADMINISTRADOR, List.of("dashboard", "inventario", "donantes", "pacientes", "etiquetado", "solicitudes",
-                    "despacho", "interhospitalario", "movil", "hemovigilancia", "reportes", "auditoria", "administracion")
+                    "despacho", "interhospitalario", "hemovigilancia", "reportes", "auditoria", "administracion")
     );
 
     public List<String> vistasPermitidas() {

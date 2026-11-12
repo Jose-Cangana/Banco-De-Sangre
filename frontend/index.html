@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BancoSangre HLEV — Pantallas</title>
+<link rel="icon" type="image/svg+xml" href="../mvc-springboot/src/main/resources/static/img/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -204,6 +205,9 @@ textarea.input{resize:vertical; min-height:64px;}
   .two-col{grid-template-columns:1fr;}
 }
 </style>
+<link rel="stylesheet" href="../mvc-springboot/src/main/resources/static/css/interfaz.css">
+<script defer src="../mvc-springboot/src/main/resources/static/js/interfaz.js"></script>
+<script defer src="../mvc-springboot/src/main/resources/static/js/roles.js"></script>
 </head>
 <body>
 
@@ -211,14 +215,15 @@ textarea.input{resize:vertical; min-height:64px;}
 <div id="view-login" class="view active" style="display:flex;">
   <div class="login-shell">
     <div class="login-left">
+      <img class="login-logo" src="../mvc-springboot/src/main/resources/static/img/logo-claro.svg" width="64" height="72" alt="BancoSangre HLEV, una gota que cuida la vida">
       <span class="login-badge">PRONAHEBAS · MINSA · DIGDOT</span>
-      <h1>Sistema Web de Gestión<br>de Banco de Sangre</h1>
+      <h1>Cuidamos cada unidad.<br>Conectamos vidas.</h1>
       <p>Hospital de Lima Este Vitarte — Servicio de Hemoterapia y Banco de Sangre Tipo II. Rotación de inventario bajo algoritmo FEFO y trazabilidad internacional ISBT 128.</p>
     </div>
     <div class="login-right">
       <form class="login-form" onsubmit="event.preventDefault(); enterApp();">
-        <h2>Iniciar sesión <span class="badge-rf">RF-01</span></h2>
-        <div class="sub">Inicio de sesión seguro con DNI/correo, contraseña cifrada y validación de colegiatura profesional según el rol</div>
+        <h2>Explorar el sistema</h2>
+        <div class="sub">Vista de demostración con datos de ejemplo. Elige un rol para recorrer las pantallas.</div>
         <div class="field">
           <label>DNI o correo institucional</label>
           <input class="input" placeholder="12345678 o usuario@hlev.gob.pe" value="jcangana@hlev.gob.pe">
@@ -232,7 +237,7 @@ textarea.input{resize:vertical; min-height:64px;}
           <input class="input" placeholder="CMP 000000">
         </div>
         <div class="field">
-          <label>Rol (RBAC — RF-02)</label>
+          <label>Rol de la demostración</label>
           <select class="input" id="role-select">
             <option>Jefe de Banco de Sangre</option>
             <option>Médico Solicitante</option>
@@ -240,8 +245,8 @@ textarea.input{resize:vertical; min-height:64px;}
             <option>Administrador</option>
           </select>
         </div>
-        <button class="btn btn-primary" type="submit" style="justify-content:center; padding:12px;">Ingresar de forma segura</button>
-        <div class="login-note">Acceso protegido con token JWT, cifrado AES-256/TLS 1.3 · Ley N° 29733 (RNF-01)</div>
+        <button class="btn btn-primary" type="submit" style="justify-content:center; padding:12px;">Entrar a la demostración</button>
+        <div class="login-note">Esta vista no inicia una sesión real ni se conecta a la base de datos del hospital.</div>
       </form>
     </div>
   </div>
@@ -251,7 +256,7 @@ textarea.input{resize:vertical; min-height:64px;}
 <div id="app-shell" class="app" style="display:none;">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark"></div>
+      <img class="brand-mark" src="../mvc-springboot/src/main/resources/static/img/logo.svg" width="44" height="49" alt="Logotipo del banco de sangre">
       <div>
         <div class="brand-name">BancoSangre HLEV</div>
         <div class="brand-sub">Tipo II · ISBT 128</div>
@@ -291,9 +296,13 @@ textarea.input{resize:vertical; min-height:64px;}
 
       <!-- ============ DASHBOARD ============ -->
       <section id="view-dashboard" class="view">
-        <div class="grid-4">
+        <div class="workspace-intro">
+          <div><h2>Cada unidad cuenta.</h2><p>Consulta la disponibilidad de sangre, revisa las alertas y organiza la atención del servicio.</p></div>
+          <img class="workspace-symbol" src="../mvc-springboot/src/main/resources/static/img/logo-claro.svg" width="58" height="66" alt="">
+        </div>
+        <div class="grid-4 dashboard-metrics">
           <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Unidades disponibles</div><div class="value">1,248</div><div class="hint">+4.2% vs. semana previa</div></div>
-          <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Próximas a vencer (≤72h)</div><div class="value">37</div><div class="hint">Priorizadas por FEFO — RF-09</div></div>
+          <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Próximas a vencer (≤72h)</div><div class="value">37</div><div class="hint">Priorizadas por FEFO</div></div>
           <div class="kpi"><div class="bar" style="background:var(--blue-700)"></div><div class="label">Solicitudes activas</div><div class="value">12</div><div class="hint">UCI · Emergencia · SOP</div></div>
           <div class="kpi"><div class="bar" style="background:var(--red-700)"></div><div class="label">Stock crítico (O−)</div><div class="value">6 un.</div><div class="hint">Bajo el mínimo de seguridad</div></div>
         </div>
@@ -303,7 +312,7 @@ textarea.input{resize:vertical; min-height:64px;}
             <div class="card-title-row">
               <div>
                 <div class="card-title">Stock de Concentrado de Hematíes por Grupo ABO/Rh</div>
-                <div class="card-desc">Actualización en tiempo real · orden de despacho FEFO (RF-09)</div>
+                <div class="card-desc">Actualización en tiempo real · orden de despacho FEFO</div>
               </div>
               <span class="pill purple"><span class="dot"></span>Orden FEFO activo</span>
             </div>
@@ -314,7 +323,7 @@ textarea.input{resize:vertical; min-height:64px;}
             <div class="card-title-row">
               <div>
                 <div class="card-title">Alertas y notificaciones</div>
-                <div class="card-desc">RF-14 — vencimiento y quiebre de stock crítico</div>
+                <div class="card-desc">vencimiento y quiebre de stock crítico</div>
               </div>
             </div>
             <div class="timeline" id="alerts-list"></div>
@@ -329,8 +338,8 @@ textarea.input{resize:vertical; min-height:64px;}
             </div>
           </div>
           <div class="grid-2">
-            <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Cumplimiento normativo PRONAHEBAS <span class="badge-rf">RF-35</span></div><div class="value">96.8%</div><div class="hint">32 de 33 controles conformes este trimestre</div></div>
-            <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Proyección de desabastecimiento <span class="badge-rf">RF-37</span></div><div class="value" style="font-size:18px;">O− en 4 días</div><div class="hint">Según demanda histórica vs. stock actual</div></div>
+            <div class="kpi"><div class="bar" style="background:var(--green-700)"></div><div class="label">Cumplimiento normativo PRONAHEBAS</div><div class="value">96.8%</div><div class="hint">32 de 33 controles conformes este trimestre</div></div>
+            <div class="kpi"><div class="bar" style="background:var(--amber-700)"></div><div class="label">Proyección de desabastecimiento</div><div class="value" style="font-size:18px;">O− en 4 días</div><div class="hint">Según demanda histórica vs. stock actual</div></div>
           </div>
         </div>
 
@@ -350,7 +359,7 @@ textarea.input{resize:vertical; min-height:64px;}
         <div class="card">
           <div class="card-title-row">
             <div>
-              <div class="card-title">Cámaras de refrigeración y congeladoras <span class="badge-rf">RF-09</span></div>
+              <div class="card-title">Cámaras de refrigeración y congeladoras</div>
               <div class="card-desc">Unidades ordenadas automáticamente por fecha de vencimiento (FEFO — Primero en Vencer, Primero en Salir)</div>
             </div>
             <div style="display:flex; gap:8px;">
@@ -370,7 +379,7 @@ textarea.input{resize:vertical; min-height:64px;}
           </div>
           <table>
             <thead><tr>
-              <th>DIN (ISBT 128)</th><th>Hemocomponente</th><th>ABO/Rh</th><th>Cámara</th><th>Vence</th><th>Estado <span class="badge-rf">RF-10</span></th><th></th>
+              <th>DIN (ISBT 128)</th><th>Hemocomponente</th><th>ABO/Rh</th><th>Cámara</th><th>Vence</th><th>Estado</th><th></th>
             </tr></thead>
             <tbody id="inventory-rows"></tbody>
           </table>
@@ -379,7 +388,7 @@ textarea.input{resize:vertical; min-height:64px;}
 
         <div class="two-col">
           <div class="card">
-            <div class="card-title-row"><div><div class="card-title">Monitoreo de temperatura de cámaras <span class="badge-rf">RF-09</span></div>
+            <div class="card-title-row"><div><div class="card-title">Monitoreo de temperatura de cámaras</div>
             <div class="card-desc">Integración con sensores — alerta ante desviación fuera de rango</div></div></div>
             <div id="temp-grid" class="grid-4" style="grid-template-columns:repeat(3,1fr);"></div>
           </div>
@@ -395,7 +404,7 @@ textarea.input{resize:vertical; min-height:64px;}
 
         <div class="card">
           <div class="card-title-row">
-            <div><div class="card-title">Fraccionamiento de hemocomponentes <span class="badge-rf">RF-06</span></div>
+            <div><div class="card-title">Fraccionamiento de hemocomponentes</div>
             <div class="card-desc">Separación de la bolsa de sangre total, vinculada al DIN matriz</div></div>
           </div>
           <div class="field" style="margin-bottom:12px;">
@@ -422,7 +431,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="donantes:ficha" class="card">
-          <div class="card-title-row"><div><div class="card-title">Registro de ficha clínica integral <span class="badge-rf">RF-03</span></div>
+          <div class="card-title-row"><div><div class="card-title">Registro de ficha clínica integral</div>
           <div class="card-desc">Datos demográficos, biométricos, tamizaje epidemiológico y antecedentes de viaje</div></div></div>
           <div class="grid-2" style="margin-bottom:14px;">
             <div class="field"><label>Nombres y apellidos</label><input class="input" id="don-nombre" placeholder="Ej. María Fernanda Quispe Rojas"></div>
@@ -432,7 +441,7 @@ textarea.input{resize:vertical; min-height:64px;}
             <div class="field"><label>Hemoglobina (g/dL)</label><input class="input" id="don-hb" type="number" step="0.1" placeholder="13.4" oninput="evaluarAptitud()"></div>
             <div class="field"><label>Grupo sanguíneo declarado</label><input class="input" id="don-abo" placeholder="Se confirmará en laboratorio"></div>
             <div class="field">
-              <label>Tipo de donación <span class="badge-rf">RF-22</span></label>
+              <label>Tipo de donación</label>
               <select class="input" id="don-tipo">
                 <option value="voluntaria">Voluntaria</option>
                 <option value="reposicion">Reposición</option>
@@ -454,7 +463,7 @@ textarea.input{resize:vertical; min-height:64px;}
           </div>
           <div class="checkline" style="margin-bottom:14px;">
             <input type="checkbox" id="don-consentimiento">
-            <label for="don-consentimiento" style="font-weight:400;">El donante firmó digitalmente el consentimiento informado previo a la extracción <span class="badge-rf">RF-32</span></label>
+            <label for="don-consentimiento" style="font-weight:400;">El donante firmó digitalmente el consentimiento informado previo a la extracción</label>
           </div>
           <div style="display:flex; align-items:center; justify-content:space-between;">
             <span class="pill green" id="aptitud-pill"><span class="dot"></span>Aptitud automática: APTO (criterios PRONAHEBAS)</span>
@@ -463,7 +472,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="donantes:diferimiento" class="card" style="display:none;">
-          <div class="card-title-row"><div><div class="card-title">Diferimiento temporal o permanente <span class="badge-rf">RF-04</span></div>
+          <div class="card-title-row"><div><div class="card-title">Diferimiento temporal o permanente</div>
           <div class="card-desc">Basado en el cuestionario de triaje clínico y causales normativas del MINSA</div></div></div>
           <table>
             <thead><tr><th>Donante</th><th>Motivo</th><th>Tipo</th><th>Vigente hasta</th><th>Estado</th></tr></thead>
@@ -472,8 +481,8 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="donantes:serologia" class="card" style="display:none;">
-          <div class="card-title-row"><div><div class="card-title">Tamizaje serológico — 7 marcadores infecciosos <span class="badge-rf">RF-07</span></div>
-          <div class="card-desc">Doble digitación ciega o interfaz LIS · bloqueo automático ante reactividad (RF-08)</div></div></div>
+          <div class="card-title-row"><div><div class="card-title">Tamizaje serológico — 7 marcadores infecciosos</div>
+          <div class="card-desc">Doble digitación ciega o interfaz LIS · bloqueo automático ante reactividad</div></div></div>
           <div class="field" style="max-width:340px; margin-bottom:14px;">
             <label>Unidad a tamizar</label>
             <select class="input mono" id="serologia-din" onchange="renderSerologia()"></select>
@@ -489,7 +498,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="donantes:campanas" class="card" style="display:none;">
-          <div class="card-title-row"><div><div class="card-title">Campañas externas de captación <span class="badge-rf">RF-30</span></div>
+          <div class="card-title-row"><div><div class="card-title">Campañas externas de captación</div>
           <div class="card-desc">Universidades, empresas e instituciones — metas y resultados</div></div></div>
           <table>
             <thead><tr><th>Campaña</th><th>Institución</th><th>Meta</th><th>Captados</th><th>Avance</th></tr></thead>
@@ -505,7 +514,7 @@ textarea.input{resize:vertical; min-height:64px;}
       <section id="view-etiquetado" class="view">
         <div class="two-col">
           <div class="card">
-            <div class="card-title-row"><div><div class="card-title">Generación de etiqueta ISBT 128 <span class="badge-rf">RF-05</span></div>
+            <div class="card-title-row"><div><div class="card-title">Generación de etiqueta ISBT 128</div>
             <div class="card-desc">Identificación de Donación (DIN), código de producto, grupo ABO/Rh y vencimiento</div></div></div>
             <div class="grid-2" style="margin-bottom:14px;">
               <div class="field"><label>DIN (verificación módulo 37-2)</label><input class="input mono" id="et-din" value="=W1237250171238" readonly></div>
@@ -531,7 +540,7 @@ textarea.input{resize:vertical; min-height:64px;}
               <button class="btn btn-primary btn-sm" onclick="generarNuevoDIN()">Generar nuevo DIN</button>
               <button class="btn btn-ghost btn-sm" onclick="imprimirEtiqueta()">Imprimir etiqueta</button>
               <button class="btn btn-ghost btn-sm" onclick="leerCodigo()">Leer código (escáner)</button>
-              <button class="btn btn-ghost btn-sm" onclick="generarCertificado()">Certificado de calidad (QR) <span class="badge-rf">RF-34</span></button>
+              <button class="btn btn-ghost btn-sm" onclick="generarCertificado()">Certificado de calidad (QR)</button>
             </div>
           </div>
 
@@ -563,7 +572,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="sol:nueva" class="card">
-          <div class="card-title-row"><div><div class="card-title">Solicitud transfusional virtual <span class="badge-rf">RF-11</span></div>
+          <div class="card-title-row"><div><div class="card-title">Solicitud transfusional virtual</div>
           <div class="card-desc">UCI · Emergencia · Centro Quirúrgico · Gineco-Obstetricia</div></div>
           <button class="btn btn-ghost btn-sm" onclick="importarHIS()">Importar orden desde HIS/SIS</button>
           </div>
@@ -571,7 +580,7 @@ textarea.input{resize:vertical; min-height:64px;}
             <label>Tipo de solicitud</label>
             <select class="input" id="sol-tipo" onchange="toggleTipoSolicitud()">
               <option value="transfusional">Solicitud transfusional</option>
-              <option value="reserva">Reserva para cirugía programada (RF-23)</option>
+              <option value="reserva">Reserva para cirugía programada</option>
             </select>
           </div>
           <div class="grid-2" style="margin-bottom:14px;">
@@ -601,7 +610,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="sol:compat" class="card" style="display:none;">
-          <div class="card-title-row"><div><div class="card-title">Pruebas de compatibilidad cruzada pre-transfusional <span class="badge-rf">RF-12</span></div>
+          <div class="card-title-row"><div><div class="card-title">Pruebas de compatibilidad cruzada pre-transfusional</div>
           <div class="card-desc">Prueba mayor, prueba menor y rastreo de anticuerpos irregulares (RAI)</div></div></div>
           <div class="field" style="max-width:340px; margin-bottom:14px;">
             <label>Solicitud a validar</label>
@@ -625,7 +634,7 @@ textarea.input{resize:vertical; min-height:64px;}
       <section id="view-despacho" class="view">
         <div class="two-col">
           <div class="card">
-            <div class="card-title-row"><div><div class="card-title">Doble verificación electrónica <span class="badge-rf">RF-13</span></div>
+            <div class="card-title-row"><div><div class="card-title">Doble verificación electrónica</div>
             <div class="card-desc">Escaneo de hemocomponente vs. pulsera identificadora del receptor</div></div></div>
             <div class="scan-box" style="margin-bottom:14px; cursor:pointer;" onclick="escanearHemocomponente()">
               <div class="scan-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
@@ -642,15 +651,15 @@ textarea.input{resize:vertical; min-height:64px;}
           <div class="card">
             <div class="card-title-row"><div><div class="card-title">Resultado de verificación</div></div></div>
             <div style="display:flex; flex-direction:column; gap:10px;" id="verif-rows">
-              <div class="cell-muted" style="font-size:12.5px;">Escanea ambos códigos para ejecutar la doble verificación electrónica (RF-13).</div>
+              <div class="cell-muted" style="font-size:12.5px;">Escanea ambos códigos para ejecutar la doble verificación electrónica.</div>
             </div>
             <div class="divider" style="margin:16px 0;"></div>
             <div class="checkline" style="margin-bottom:14px;">
               <input type="checkbox" id="despacho-firma" onchange="evaluarVerificacion()">
-              <label for="despacho-firma" style="font-weight:400;">Firma electrónica del responsable validada <span class="badge-rf">RF-29</span></label>
+              <label for="despacho-firma" style="font-weight:400;">Firma electrónica del responsable validada</label>
             </div>
             <button class="btn btn-primary" id="despacho-btn" style="width:100%; justify-content:center; opacity:.5;" disabled onclick="autorizarDespacho()">Autorizar y registrar entrega</button>
-            <div style="text-align:center; font-size:11px; color:var(--ink-400); margin-top:8px;">Toda entrega queda registrada en el log de auditoría (RF-17)</div>
+            <div style="text-align:center; font-size:11px; color:var(--ink-400); margin-top:8px;">Toda entrega queda registrada en el log de auditoría</div>
           </div>
         </div>
       </section>
@@ -664,7 +673,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="red:panel" class="card">
-          <div class="card-title-row"><div><div class="card-title">Visibilidad de stock en la red de establecimientos <span class="badge-rf">RF-19</span></div>
+          <div class="card-title-row"><div><div class="card-title">Visibilidad de stock en la red de establecimientos</div>
           <div class="card-desc">Disponibilidad por grupo ABO/Rh en establecimientos integrados de la red pública</div></div></div>
           <table>
             <thead><tr><th>Establecimiento</th><th>O+</th><th>O−</th><th>A+</th><th>A−</th><th>B+</th><th>B−</th><th>AB+</th><th>AB−</th></tr></thead>
@@ -678,8 +687,8 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="red:solicitudes" class="card" style="display:none;">
-          <div class="card-title-row"><div><div class="card-title">Solicitudes de intercambio interhospitalario <span class="badge-rf">RF-18</span></div>
-          <div class="card-desc">Envío, respuesta y devolución de unidades entre establecimientos (RF-33)</div></div>
+          <div class="card-title-row"><div><div class="card-title">Solicitudes de intercambio interhospitalario</div>
+          <div class="card-desc">Envío, respuesta y devolución de unidades entre establecimientos</div></div>
           <button class="btn btn-primary btn-sm" onclick="abrirModalIntercambio()">+ Nueva solicitud de intercambio</button>
           </div>
           <table>
@@ -689,7 +698,7 @@ textarea.input{resize:vertical; min-height:64px;}
         </div>
 
         <div data-tabpanel="red:convenios" class="card" style="display:none;">
-          <div class="card-title-row"><div><div class="card-title">Convenios interinstitucionales vigentes <span class="badge-rf">RF-36</span></div></div></div>
+          <div class="card-title-row"><div><div class="card-title">Convenios interinstitucionales vigentes</div></div></div>
           <table>
             <thead><tr><th>Establecimiento</th><th>Tipo de convenio</th><th>Vigente hasta</th><th>Estado</th></tr></thead>
             <tbody>
@@ -726,12 +735,12 @@ textarea.input{resize:vertical; min-height:64px;}
             </div>
           </div>
           <div class="card">
-            <div class="card-title-row"><div><div class="card-title">Aplicación móvil para personal asistencial <span class="badge-rf">RF-20 · RF-21</span></div>
+            <div class="card-title-row"><div><div class="card-title">Aplicación móvil para personal asistencial</div>
             <div class="card-desc">Consulta de stock y registro de solicitudes desde dispositivos móviles, con notificaciones push</div></div></div>
             <div class="timeline">
               <div class="timeline-item"><div class="timeline-dot" style="background:var(--blue-700);"></div><div><div class="timeline-title">Consulta de disponibilidad</div><div class="timeline-meta">Stock por grupo ABO/Rh en tiempo real, igual que en el panel web</div></div></div>
               <div class="timeline-item"><div class="timeline-dot" style="background:var(--red-700);"></div><div><div class="timeline-title">Notificaciones push</div><div class="timeline-meta">Quiebres de stock, vencimientos próximos y respuestas a solicitudes interhospitalarias</div></div></div>
-              <div class="timeline-item"><div class="timeline-dot" style="background:var(--green-700);"></div><div><div class="timeline-title">Registro de solicitudes</div><div class="timeline-meta">Mismo flujo que RF-11, optimizado para uso desde cabecera del paciente</div></div></div>
+              <div class="timeline-item"><div class="timeline-dot" style="background:var(--green-700);"></div><div><div class="timeline-title">Registro de solicitudes</div><div class="timeline-meta">Solicitud transfusional optimizada para uso desde cabecera del paciente</div></div></div>
             </div>
             <button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="simularPushMovil()">Simular notificación push</button>
           </div>
@@ -741,7 +750,7 @@ textarea.input{resize:vertical; min-height:64px;}
       <!-- ============ HEMOVIGILANCIA ============ -->
       <section id="view-hemovigilancia" class="view">
         <div class="card">
-          <div class="card-title-row"><div><div class="card-title">Eventos e incidentes adversos transfusionales <span class="badge-rf">RF-15</span></div>
+          <div class="card-title-row"><div><div class="card-title">Eventos e incidentes adversos transfusionales</div>
           <div class="card-desc">Inmediatos o tardíos — trazabilidad completa hacia la donación origen</div></div>
           <button class="btn btn-primary btn-sm" onclick="abrirModalHemovigilancia()">+ Registrar evento</button>
           </div>
@@ -755,7 +764,7 @@ textarea.input{resize:vertical; min-height:64px;}
       <!-- ============ REPORTES ============ -->
       <section id="view-reportes" class="view">
         <div class="card">
-          <div class="card-title-row"><div><div class="card-title">Reportes oficiales <span class="badge-rf">RF-16</span></div>
+          <div class="card-title-row"><div><div class="card-title">Reportes oficiales</div>
           <div class="card-desc">Consolidados operacionales, estadísticos y epidemiológicos para fiscalización</div></div></div>
           <div class="grid-4" id="reports-grid"></div>
         </div>
@@ -764,7 +773,7 @@ textarea.input{resize:vertical; min-height:64px;}
       <!-- ============ AUDITORÍA ============ -->
       <section id="view-auditoria" class="view">
         <div class="card">
-          <div class="card-title-row"><div><div class="card-title">Registro de auditoría inmutable <span class="badge-rf">RF-17</span></div>
+          <div class="card-title-row"><div><div class="card-title">Registro de auditoría inmutable</div>
           <div class="card-desc">Fecha, hora exacta, terminal IP y usuario responsable de cada acción crítica</div></div></div>
           <table>
             <thead><tr><th>Fecha / hora</th><th>Usuario</th><th>Acción</th><th>Recurso</th><th>IP terminal</th></tr></thead>
@@ -777,7 +786,7 @@ textarea.input{resize:vertical; min-height:64px;}
       <section id="view-administracion" class="view">
 
         <div data-tabpanel="admin:usuarios" class="card">
-          <div class="card-title-row"><div><div class="card-title">Gestión de usuarios y roles <span class="badge-rf">RF-26</span></div>
+          <div class="card-title-row"><div><div class="card-title">Gestión de usuarios y roles</div>
           <div class="card-desc">Crear, editar, desactivar y reasignar roles de las cuentas registradas</div></div>
           <button class="btn btn-primary btn-sm" onclick="toast('Formulario de nuevo usuario (simulado)')">+ Nuevo usuario</button>
           </div>
@@ -804,7 +813,7 @@ textarea.input{resize:vertical; min-height:64px;}
 /* =========================================================
    ESTADO CENTRAL DE LA APLICACIÓN
    Todas las acciones mutan este objeto y disparan re-render +
-   un asiento en el log de auditoría (RF-17), simulando el
+   un asiento en el log de auditoría, simulando el
    comportamiento de un sistema transaccional real.
 ========================================================= */
 const state = {
@@ -939,19 +948,19 @@ function pushAlert(color, title, meta){
 }
 
 const quickAccessData = [
-  ["Registrar donante","RF-03 · RF-04","donantes"], ["Etiquetar unidad ISBT 128","RF-05","etiquetado"],
-  ["Nueva solicitud clínica","RF-11 · RF-12","solicitudes"], ["Despacho con doble verificación","RF-13","despacho"],
+  ["Registrar donante","","donantes"], ["Etiquetar unidad ISBT 128","","etiquetado"],
+  ["Nueva solicitud clínica","","solicitudes"], ["Despacho con doble verificación","","despacho"],
 ];
 function renderQuickAccess(){
   document.getElementById('quick-access').innerHTML = quickAccessData.map(([title,rf,view])=>{
     return `<button class="card" style="cursor:pointer; text-align:left; padding:16px; border-radius:12px;" onclick="showView('${view}')">
-      <div class="badge-rf" style="margin-bottom:10px; display:inline-block;">${rf}</div>
+
       <div style="font-weight:600; font-size:13.5px;">${title}</div>
     </button>`;
   }).join('');
 }
 
-/* ---------------- Render + acciones: Inventario (RF-09, RF-10) ---------------- */
+/* ---------------- Render + acciones: Inventario ---------------- */
 function renderInventory(){
   const q = (document.getElementById('inv-search')?.value || '').trim().toLowerCase();
   const filter = document.getElementById('inv-filter')?.value || '';
@@ -996,9 +1005,9 @@ function verUnidad(din){
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
       <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoUnidad('${u.din}','reservado')">Reservar</button>
       <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoUnidad('${u.din}','disponible')">Liberar a disponible</button>
-      <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoUnidad('${u.din}','bloqueado')">Bloquear (RF-08)</button>
-      <button class="btn btn-ghost btn-sm" onclick="descartarUnidad('${u.din}')">Descartar (RF-27)</button>
-      <button class="btn btn-ghost btn-sm" onclick="verTrazabilidad('${u.din}')">Ver trazabilidad (RF-28)</button>
+      <button class="btn btn-ghost btn-sm" onclick="cambiarEstadoUnidad('${u.din}','bloqueado')">Bloquear</button>
+      <button class="btn btn-ghost btn-sm" onclick="descartarUnidad('${u.din}')">Descartar</button>
+      <button class="btn btn-ghost btn-sm" onclick="verTrazabilidad('${u.din}')">Ver trazabilidad</button>
     </div>
   `);
 }
@@ -1009,7 +1018,7 @@ function descartarUnidad(din){
   const u = state.inventory.find(x=>x.din===din);
   if(!u) return;
   u.status = 'incinerado';
-  logAudit(`Descartó unidad — motivo: ${motivo} (RF-28, con evidencia fotográfica adjunta)`, `DIN ${din}`);
+  logAudit(`Descartó unidad — motivo: ${motivo} (con evidencia fotográfica adjunta)`, `DIN ${din}`);
   toast(`Unidad ${din} descartada e incinerada`, true);
   closeModal();
   renderInventory();
@@ -1020,14 +1029,14 @@ function verTrazabilidad(din){
   if(!u) return;
   openModal(`
     <div class="modal-head">
-      <div><div class="modal-title">Trazabilidad completa</div><div class="card-desc">DIN ${din} — ciclo de vida (RF-29)</div></div>
+      <div><div class="modal-title">Trazabilidad completa</div><div class="card-desc">DIN ${din} — ciclo de vida</div></div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="timeline">
-      <div class="timeline-item"><div class="timeline-dot" style="background:var(--green-700);"></div><div><div class="timeline-title">Donación registrada</div><div class="timeline-meta">Ficha clínica del donante validada — RF-03</div></div></div>
-      <div class="timeline-item"><div class="timeline-dot" style="background:var(--purple-700);"></div><div><div class="timeline-title">Tamizaje serológico</div><div class="timeline-meta">7 marcadores procesados — RF-07</div></div></div>
-      <div class="timeline-item"><div class="timeline-dot" style="background:var(--blue-700);"></div><div><div class="timeline-title">Etiquetado ISBT 128</div><div class="timeline-meta">DIN generado con verificación módulo 37-2 — RF-05</div></div></div>
-      <div class="timeline-item"><div class="timeline-dot" style="background:var(--amber-700);"></div><div><div class="timeline-title">Ingreso a inventario FEFO</div><div class="timeline-meta">${u.camara} — RF-09</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot" style="background:var(--green-700);"></div><div><div class="timeline-title">Donación registrada</div><div class="timeline-meta">Ficha clínica del donante validada</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot" style="background:var(--purple-700);"></div><div><div class="timeline-title">Tamizaje serológico</div><div class="timeline-meta">7 marcadores procesados</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot" style="background:var(--blue-700);"></div><div><div class="timeline-title">Etiquetado ISBT 128</div><div class="timeline-meta">DIN generado con verificación módulo 37-2</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot" style="background:var(--amber-700);"></div><div><div class="timeline-title">Ingreso a inventario FEFO</div><div class="timeline-meta">${u.camara}</div></div></div>
       <div class="timeline-item"><div class="timeline-dot" style="background:var(--red-700);"></div><div><div class="timeline-title">Estado actual: ${statusMeta[u.status][1]}</div><div class="timeline-meta">Vence ${u.exp}</div></div></div>
     </div>
   `);
@@ -1037,13 +1046,13 @@ function cambiarEstadoUnidad(din, nuevoEstado){
   const u = state.inventory.find(x=>x.din===din);
   if(!u) return;
   u.status = nuevoEstado;
-  logAudit(`Cambió estado de unidad a "${statusMeta[nuevoEstado][1]}" (RF-10)`, `DIN ${din}`);
+  logAudit(`Cambió estado de unidad a "${statusMeta[nuevoEstado][1]}"`, `DIN ${din}`);
   toast(`Unidad ${din} → ${statusMeta[nuevoEstado][1]}`);
   closeModal();
   renderInventory();
 }
 
-/* Fraccionamiento (RF-06) */
+/* Fraccionamiento */
 function fillFractSelect(){
   const sel = document.getElementById('fract-din');
   if(!sel) return;
@@ -1068,12 +1077,12 @@ function fraccionarUnidad(){
       camara: matriz.camara, exp: matriz.exp, status: "cuarentena",
     });
   });
-  logAudit(`Fraccionó bolsa de sangre total en 4 hemocomponentes (RF-06)`, `DIN matriz ${din}`);
+  logAudit(`Fraccionó bolsa de sangre total en 4 hemocomponentes`, `DIN matriz ${din}`);
   toast(`Se generaron 4 hemocomponentes a partir de ${din}`);
   renderInventory();
 }
 
-/* ---------------- Donantes (RF-03, RF-04) ---------------- */
+/* ---------------- Donantes ---------------- */
 function evaluarAptitud(){
   const peso = parseFloat(document.getElementById('don-peso').value);
   const hb = parseFloat(document.getElementById('don-hb').value);
@@ -1096,17 +1105,17 @@ function evaluarAptitud(){
 function registrarDonante(){
   const nombre = document.getElementById('don-nombre').value.trim() || 'Donante sin nombre registrado';
   if(!document.getElementById('don-consentimiento').checked){
-    toast('Falta registrar el consentimiento informado firmado (RF-36)', true);
+    toast('Falta registrar el consentimiento informado firmado', true);
     return;
   }
   const motivo = evaluarAptitud();
   if(motivo){
     state.diferimientos.unshift([nombre, motivo, 'amber', 'Temporal', '—']);
     renderDiferimientos();
-    logAudit('Registró donante — diferido automáticamente (RF-04)', nombre);
+    logAudit('Registró donante — diferido automáticamente', nombre);
     toast(`${nombre} quedó diferido: ${motivo}`, true);
   } else {
-    logAudit('Registró ficha clínica de donante — APTO (RF-03)', nombre);
+    logAudit('Registró ficha clínica de donante — APTO', nombre);
     toast(`${nombre} registrado como APTO`);
   }
 }
@@ -1119,7 +1128,7 @@ function renderDiferimientos(){
   }).join('');
 }
 
-/* ---------------- Serología (RF-07, RF-08) ---------------- */
+/* ---------------- Serología ---------------- */
 function fillSerologiaSelect(){
   const sel = document.getElementById('serologia-din');
   if(!sel) return;
@@ -1162,16 +1171,16 @@ function guardarSerologia(){
   const unidad = state.inventory.find(u=>u.din===din);
   if(reactivo && unidad){
     unidad.status = 'bloqueado';
-    logAudit(`Bloqueó unidad automáticamente por reactividad a ${marcadorReactivo} (RF-08)`, `DIN ${din}`);
+    logAudit(`Bloqueó unidad automáticamente por reactividad a ${marcadorReactivo}`, `DIN ${din}`);
     document.getElementById('serologia-alert').innerHTML = `
       <div style="margin-top:14px; padding:12px 14px; background:var(--red-50); border-radius:10px; font-size:12.5px; color:var(--red-700);">
-        <strong>RF-08 · Bloqueo irreversible:</strong> la unidad DIN ${din} fue bloqueada de forma automática e inmediata por reactividad a ${marcadorReactivo}. No puede distribuirse ni despacharse.
+        <strong>Bloqueo irreversible:</strong> la unidad DIN ${din} fue bloqueada de forma automática e inmediata por reactividad a ${marcadorReactivo}. No puede distribuirse ni despacharse.
       </div>`;
     pushAlert('red', `Unidad bloqueada por reactividad serológica`, `DIN ${din} · marcador: ${marcadorReactivo}`);
     toast(`Unidad ${din} bloqueada automáticamente (${marcadorReactivo})`, true);
   } else if(unidad){
     unidad.status = 'disponible';
-    logAudit('Registró tamizaje serológico conforme — unidad liberada (RF-07)', `DIN ${din}`);
+    logAudit('Registró tamizaje serológico conforme — unidad liberada', `DIN ${din}`);
     toast(`Unidad ${din} conforme — liberada a inventario disponible`);
     document.getElementById('serologia-alert').innerHTML = '';
   }
@@ -1179,7 +1188,7 @@ function guardarSerologia(){
   fillSerologiaSelect();
 }
 
-/* ---------------- Etiquetado ISBT 128 (RF-05) ---------------- */
+/* ---------------- Etiquetado ISBT 128 ---------------- */
 function updateEtiquetaPreview(){
   const abo = document.getElementById('et-abo').value;
   const [code, nombre] = document.getElementById('et-producto').value.split('|');
@@ -1206,7 +1215,7 @@ function generarNuevoDIN(){
   const abo = document.getElementById('et-abo').value;
   const [code, nombre] = document.getElementById('et-producto').value.split('|');
   state.inventory.unshift({din, producto: nombre, abo, camara:"Recepción · Sin asignar", exp: venceStr, status:"cuarentena"});
-  logAudit('Generó nuevo DIN con verificación módulo 37-2 (RF-05)', `DIN ${din}`);
+  logAudit('Generó nuevo DIN con verificación módulo 37-2', `DIN ${din}`);
   toast(`Nuevo DIN generado: ${din}`);
   renderInventory();
 }
@@ -1219,7 +1228,7 @@ function leerCodigo(){
 }
 function generarCertificado(){
   const din = document.getElementById('et-din').value;
-  logAudit('Generó certificado de calidad con código QR de verificación (RF-34)', din);
+  logAudit('Generó certificado de calidad con código QR de verificación', din);
   openModal(`
     <div class="modal-head">
       <div><div class="modal-title">Certificado de calidad</div><div class="card-desc">${din}</div></div>
@@ -1236,7 +1245,7 @@ function generarCertificado(){
   toast('Certificado de calidad generado con código QR');
 }
 
-/* ---------------- Solicitudes (RF-11, RF-12) ---------------- */
+/* ---------------- Solicitudes ---------------- */
 function toggleTipoSolicitud(){
   const esReserva = document.getElementById('sol-tipo').value === 'reserva';
   document.getElementById('sol-reserva-field').style.display = esReserva ? '' : 'none';
@@ -1246,7 +1255,7 @@ function importarHIS(){
   document.getElementById('sol-hc').value = `HC-2026-${Math.floor(Math.random()*90000+10000)}`;
   document.getElementById('sol-cie10').value = 'K92.2 — Hemorragia digestiva alta';
   document.getElementById('sol-componente').value = '2 unidades — Concentrado de Hematíes';
-  toast('Orden importada automáticamente desde el HIS/SIS hospitalario (RF-31)');
+  toast('Orden importada automáticamente desde el HIS/SIS hospitalario');
 }
 function enviarSolicitud(){
   const paciente = document.getElementById('sol-paciente').value.trim();
@@ -1264,7 +1273,7 @@ function enviarSolicitud(){
     estado: 'pendiente',
   };
   state.solicitudes.unshift(req);
-  logAudit(tipo==='reserva' ? `Registró reserva quirúrgica programada (RF-24)` : `Registró solicitud transfusional (RF-11)`, `${req.id} · ${req.servicio}`);
+  logAudit(tipo==='reserva' ? `Registró reserva quirúrgica programada` : `Registró solicitud transfusional`, `${req.id} · ${req.servicio}`);
   toast(`Solicitud ${req.id} enviada al Banco de Sangre`);
   pushAlert('blue', `Nueva solicitud — ${req.servicio}`, `${req.componente} · ${req.cie10} · ${paciente}`);
   document.getElementById('sol-paciente').value=''; document.getElementById('sol-hc').value='';
@@ -1298,7 +1307,7 @@ function validarCompatibilidad(){
   const req = state.solicitudes.find(r=>r.id===id);
   if(!req){ toast('No hay solicitud seleccionada', true); return; }
   req.estado = 'compatible';
-  logAudit('Validó compatibilidad cruzada — mayor, menor y RAI (RF-12)', req.id);
+  logAudit('Validó compatibilidad cruzada — mayor, menor y RAI', req.id);
   toast(`Solicitud ${req.id} marcada como compatible`);
   renderSolicitudes();
 }
@@ -1307,7 +1316,7 @@ function switchTab(group, tabKey){
   if(tabBtn) tabBtn.click();
 }
 
-/* ---------------- Despacho (RF-13) ---------------- */
+/* ---------------- Despacho ---------------- */
 function fillDespachoContext(){ /* placeholder para futura sincronización con solicitudes */ }
 function escanearHemocomponente(){
   const candidatos = state.inventory.filter(u=>u.status==='disponible' || u.status==='reservado');
@@ -1332,7 +1341,7 @@ function evaluarVerificacion(){
   const box = document.getElementById('verif-rows');
   const btn = document.getElementById('despacho-btn');
   if(!din || !hc){
-    box.innerHTML = `<div class="cell-muted" style="font-size:12.5px;">Escanea ambos códigos para ejecutar la doble verificación electrónica (RF-13).</div>`;
+    box.innerHTML = `<div class="cell-muted" style="font-size:12.5px;">Escanea ambos códigos para ejecutar la doble verificación electrónica.</div>`;
     btn.disabled = true; btn.style.opacity = .5;
     return;
   }
@@ -1357,7 +1366,7 @@ function autorizarDespacho(){
   const u = state.inventory.find(x=>x.din===din);
   if(!u) return;
   u.status = 'despachado';
-  logAudit(`Autorizó despacho tras doble verificación electrónica y firma electrónica (RF-13, RF-30)`, `DIN ${din} → ${hc}`);
+  logAudit(`Autorizó despacho tras doble verificación electrónica y firma electrónica`, `DIN ${din} → ${hc}`);
   toast(`Entrega registrada: ${din} → ${paciente || hc}`);
   state.despachoScan = { din:null, hc:null };
   document.getElementById('scan-din').textContent = '—';
@@ -1367,7 +1376,7 @@ function autorizarDespacho(){
   evaluarVerificacion();
 }
 
-/* ---------------- Hemovigilancia (RF-15) ---------------- */
+/* ---------------- Hemovigilancia ---------------- */
 function renderHemovigilancia(){
   document.getElementById('hemovigilancia-rows').innerHTML = state.hemovigilancia.map(e=>{
     const [sColor,sLabel] = e.severidad.split(':');
@@ -1380,7 +1389,7 @@ function abrirModalHemovigilancia(){
   const dinOptions = state.inventory.filter(u=>u.status==='despachado').map(u=>`<option value="${u.din}">${u.din}</option>`).join('') || '<option value="">Sin unidades despachadas</option>';
   openModal(`
     <div class="modal-head">
-      <div><div class="modal-title">Registrar evento de hemovigilancia</div><div class="card-desc">RF-15 — trazabilidad hacia la donación origen</div></div>
+      <div><div class="modal-title">Registrar evento de hemovigilancia</div><div class="card-desc">trazabilidad hacia la donación origen</div></div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div style="display:flex; flex-direction:column; gap:12px;">
@@ -1408,20 +1417,20 @@ function guardarEventoHemovigilancia(){
     estado: 'amber:En investigación',
   };
   state.hemovigilancia.unshift(evento);
-  logAudit('Registró evento adverso transfusional (RF-15)', `DIN ${evento.din} · ${paciente}`);
+  logAudit('Registró evento adverso transfusional', `DIN ${evento.din} · ${paciente}`);
   toast('Evento de hemovigilancia registrado');
   closeModal();
   renderHemovigilancia();
 }
 
-/* ---------------- Reportes (RF-16) ---------------- */
+/* ---------------- Reportes ---------------- */
 const reportsData = [
   ["Reporte operacional mensual","Movimientos de inventario, captación y despacho","PRONAHEBAS"],
   ["Reporte epidemiológico","Prevalencia de marcadores serológicos reactivos","DIGDOT"],
   ["Indicadores de mermas y caducidad","Unidades vencidas / incineradas bajo FEFO","MINSA"],
   ["Auditoría de hemovigilancia","Eventos adversos transfusionales del periodo","PRONAHEBAS"],
-  ["Reporte normativo automático","Generación periódica programada para MINSA (RF-31)","PRONAHEBAS"],
-  ["Dataset anonimizado de investigación","Exportación con fines epidemiológicos, sin datos identificables (RF-38)","MINSA"],
+  ["Reporte normativo automático","Generación periódica programada para MINSA","PRONAHEBAS"],
+  ["Dataset anonimizado de investigación","Exportación con fines epidemiológicos, sin datos identificables","MINSA"],
 ];
 function renderReports(){
   document.getElementById('reports-grid').innerHTML = reportsData.map(([title,desc,org],i)=>{
@@ -1437,12 +1446,12 @@ function renderReports(){
   }).join('');
 }
 function generarReporte(title, formato){
-  logAudit(`Generó reporte oficial "${title}" en formato ${formato} (RF-16, RF-25)`, title);
+  logAudit(`Generó reporte oficial "${title}" en formato ${formato}`, title);
   toast(`Generando "${title}" (${formato})…`);
   if(formato === 'PDF') setTimeout(()=> window.print(), 400);
 }
 
-/* ---------------- Auditoría (RF-17) ---------------- */
+/* ---------------- Auditoría ---------------- */
 function renderAudit(){
   document.getElementById('audit-rows').innerHTML = state.auditLog.slice(0,50).map(([ts,user,action,resource,ip])=>{
     return `<tr><td class="mono">${ts}</td><td class="cell-strong">${user}</td><td class="cell-muted">${action}</td><td class="mono">${resource}</td><td class="mono">${ip}</td></tr>`;
@@ -1462,23 +1471,23 @@ const viewTitles = {
   hemovigilancia:["Hemovigilancia","Eventos adversos transfusionales y trazabilidad"],
   reportes:["Reportes","Consolidados oficiales para PRONAHEBAS, DIGDOT y MINSA"],
   auditoria:["Auditoría del sistema","Bitácora inmutable de acciones críticas"],
-  administracion:["Administración","Gestión de usuarios y roles del sistema (RF-26)"],
+  administracion:["Administración","Gestión de usuarios y roles del sistema"],
 };
 
-/* ---------------- Control de acceso basado en roles — RBAC (RF-02) ----------------
+/* ---------------- Control de acceso basado en roles — RBAC ----------------
    Cada rol solo ve/navega a las vistas que le competen según el documento oficial:
-   - Médico Solicitante: registra solicitudes transfusionales y usa la app móvil (RF-11, RF-20).
+   - Médico Solicitante: registra solicitudes transfusionales y usa la app móvil.
    - Tecnólogo Médico: opera el núcleo técnico del banco de sangre — donantes, tamizaje,
-     etiquetado ISBT 128, inventario, solicitudes y hemovigilancia (RF-03 a RF-15).
+     etiquetado ISBT 128, inventario, solicitudes y hemovigilancia ( a ).
    - Jefe de Banco de Sangre: hereda todo lo del Tecnólogo Médico y además autoriza despacho,
-     coordina la red interhospitalaria y accede a reportes y auditoría (RF-13, RF-16 a RF-19).
-   - Administrador: gestiona cuentas/roles y supervisa la auditoría del sistema (RF-17, RF-26).
+     coordina la red interhospitalaria y accede a reportes y auditoría (,  a ).
+   - Administrador: gestiona cuentas/roles y supervisa la auditoría del sistema.
 ------------------------------------------------------------------------------------ */
 const ROLE_VIEWS = {
   "Médico Solicitante": ["dashboard","solicitudes","movil"],
   "Tecnólogo Médico": ["dashboard","inventario","donantes","etiquetado","solicitudes","hemovigilancia"],
-  "Jefe de Banco de Sangre": ["dashboard","inventario","donantes","etiquetado","solicitudes","hemovigilancia","despacho","interhospitalario","movil","reportes","auditoria"],
-  "Administrador": ["dashboard","auditoria","administracion"],
+  "Jefe de Banco de Sangre": ["dashboard","inventario","donantes","etiquetado","solicitudes","hemovigilancia","despacho","interhospitalario","movil","reportes"],
+  "Administrador": Object.keys(viewTitles),
 };
 
 function vistasPermitidas(role){
@@ -1507,7 +1516,7 @@ const viewRenderers = {
   administracion: ()=>{ renderUsuarios(); },
 };
 
-/* ---------------- RF-23 Monitoreo de temperatura ---------------- */
+/* ----------------  Monitoreo de temperatura ---------------- */
 state.temps = [
   {camara:"Cámara 1 · Refrigeración", rango:"2°C – 6°C", actual:4.1, ok:true},
   {camara:"Cámara 2 · Refrigeración", rango:"2°C – 6°C", actual:6.8, ok:false},
@@ -1525,7 +1534,7 @@ function renderTemps(){
     </div>`).join('');
 }
 
-/* ---------------- RF-18/19/40/45 Red interhospitalaria ---------------- */
+/* ---------------- /19/40/45 Red interhospitalaria ---------------- */
 state.intercambios = [
   {establecimiento:"Hospital Vitarte II", producto:"Concentrado de Hematíes O−", cantidad:"4 un.", direccion:"Saliente", estado:"amber:Pendiente"},
   {establecimiento:"PRONAHEBAS Central", producto:"Plasma Fresco Congelado", cantidad:"10 un.", direccion:"Entrante", estado:"green:Aceptada"},
@@ -1542,7 +1551,7 @@ function renderIntercambios(){
 }
 function abrirModalIntercambio(){
   openModal(`
-    <div class="modal-head"><div><div class="modal-title">Nueva solicitud de intercambio</div><div class="card-desc">RF-18</div></div>
+    <div class="modal-head"><div><div class="modal-title">Nueva solicitud de intercambio</div><div class="card-desc"></div></div>
     <button class="modal-close" onclick="closeModal()">✕</button></div>
     <div style="display:flex; flex-direction:column; gap:12px;">
       <div class="field"><label>Establecimiento destino</label>
@@ -1559,7 +1568,7 @@ function guardarIntercambio(){
   const est = document.getElementById('ix-est').value;
   const comp = document.getElementById('ix-comp').value.trim() || '1 unidad';
   state.intercambios.unshift({establecimiento:est, producto:comp, cantidad:'', direccion:'Saliente', estado:'amber:Pendiente'});
-  logAudit('Envió solicitud de intercambio interhospitalario (RF-18)', est);
+  logAudit('Envió solicitud de intercambio interhospitalario', est);
   toast(`Solicitud enviada a ${est}`);
   closeModal();
   renderIntercambios();
@@ -1571,21 +1580,21 @@ function responderIntercambio(i){
   renderIntercambios();
 }
 function devolverIntercambio(i){
-  logAudit('Registró devolución de unidades prestadas (RF-38)', state.intercambios[i].establecimiento);
+  logAudit('Registró devolución de unidades prestadas', state.intercambios[i].establecimiento);
   toast('Devolución registrada — inventario de origen actualizado');
   state.intercambios.splice(i,1);
   renderIntercambios();
 }
 
-/* ---------------- RF-20/21 App móvil ---------------- */
+/* ---------------- /21 App móvil ---------------- */
 function simularPushMovil(){
-  pushAlert('blue', 'Notificación push enviada', 'Personal asistencial notificado desde app móvil (RF-21)');
-  logAudit('Envió notificación push a la aplicación móvil (RF-21)', 'App móvil');
+  pushAlert('blue', 'Notificación push enviada', 'Personal asistencial notificado desde app móvil');
+  logAudit('Envió notificación push a la aplicación móvil', 'App móvil');
   toast('Notificación push simulada enviada al personal');
 }
 
 
-/* ---------------- Administración: Usuarios (RF-26) ---------------- */
+/* ---------------- Administración: Usuarios ---------------- */
 state.usuarios = [
   {nombre:"Cangana Salcedo, José Leonel", rol:"Jefe de Banco de Sangre", ultimo:"Hoy 09:12", activo:true},
   {nombre:"Palomino Camarena, José", rol:"Tecnólogo Médico", ultimo:"Hoy 08:55", activo:true},
@@ -1604,7 +1613,7 @@ function renderUsuarios(){
 }
 function toggleUsuario(i){
   state.usuarios[i].activo = !state.usuarios[i].activo;
-  logAudit(`${state.usuarios[i].activo?'Reactivó':'Desactivó'} cuenta de usuario (RF-27)`, state.usuarios[i].nombre);
+  logAudit(`${state.usuarios[i].activo?'Reactivó':'Desactivó'} cuenta de usuario`, state.usuarios[i].nombre);
   toast(`${state.usuarios[i].nombre} ${state.usuarios[i].activo?'reactivado':'desactivado'}`);
   renderUsuarios();
 }

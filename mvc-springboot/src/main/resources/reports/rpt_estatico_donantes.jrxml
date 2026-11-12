@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- REPORTE ESTATICO: listado general de donantes. No recibe parametros de filtro; la consulta y el diseno son fijos. -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rpt_estatico_donantes" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="794" leftMargin="24" rightMargin="24" topMargin="24" bottomMargin="24" whenNoDataType="NoDataSection" isSummaryWithPageHeaderAndFooter="true">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="BancoSangrePostgreSQL"/>
+	<style name="Base" isDefault="true" forecolor="#12161F" fontName="DejaVu Sans" fontSize="8"/>
+	<style name="Fila" mode="Opaque" backcolor="#FFFFFF">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT} % 2 == 0]]></conditionExpression>
+			<style mode="Opaque" backcolor="#F7F8FA"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="LOGO" class="java.lang.String">
+		<parameterDescription><![CDATA[Ruta del logo (en la app: reportes/img/logo-reporte.png)]]></parameterDescription>
+		<defaultValueExpression><![CDATA["reports/img/logo-reporte.png"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="USUARIO" class="java.lang.String">
+		<parameterDescription><![CDATA[Usuario que genera el reporte]]></parameterDescription>
+		<defaultValueExpression><![CDATA["Sistema"]]></defaultValueExpression>
+	</parameter>
+	<queryString language="SQL">
+		<![CDATA[SELECT dni,
+       concat_ws(' ', NULLIF(TRIM(nombres), ''), NULLIF(TRIM(apellidos), '')) AS donante,
+       COALESCE(grupo_abo::text || CASE factor_rh WHEN 'positivo' THEN '+' ELSE '-' END, 'Sin confirmar') AS grupo,
+       sexo::text AS sexo,
+       tipo_donacion::text AS tipo_donacion,
+       total_donaciones,
+       ultima_donacion,
+       CASE WHEN apto THEN 'Sí' ELSE 'No' END AS apto,
+       CASE WHEN diferido THEN 'Diferido' ELSE 'Activo' END AS estado,
+       campana
+FROM donantes
+ORDER BY apellidos, nombres]]>
+	</queryString>
+	<field name="dni" class="java.lang.String"/>
+	<field name="donante" class="java.lang.String"/>
+	<field name="grupo" class="java.lang.String"/>
+	<field name="sexo" class="java.lang.String"/>
+	<field name="tipo_donacion" class="java.lang.String"/>
+	<field name="total_donaciones" class="java.lang.Integer"/>
+	<field name="ultima_donacion" class="java.sql.Date"/>
+	<field name="apto" class="java.lang.String"/>
+	<field name="estado" class="java.lang.String"/>
+	<field name="campana" class="java.lang.String"/>
+	<variable name="TOTAL" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[1]]></variableExpression>
+	</variable>
+	<variable name="APTOS" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA["Sí".equals($F{apto}) ? 1 : 0]]></variableExpression>
+	</variable>
+	<variable name="DIFERIDOS" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA["Diferido".equals($F{estado}) ? 1 : 0]]></variableExpression>
+	</variable>
+	<variable name="DONACIONES" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{total_donaciones} == null ? 0 : $F{total_donaciones}]]></variableExpression>
+	</variable>
+	<title>
+		<band height="188">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="64" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="64" width="794" height="3" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<image onErrorType="Blank">
+				<reportElement x="14" y="9" width="46" height="46"/>
+				<imageExpression><![CDATA[$P{LOGO}]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="72" y="11" width="420" height="22" forecolor="#FFFFFF"/>
+				<textElement verticalAlignment="Middle"><font size="15" isBold="true"/></textElement>
+				<text><![CDATA[BancoSangre HLEV]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="72" y="33" width="470" height="16" forecolor="#AEB6CF"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Hospital de Lima Este Vitarte  ·  Banco de Sangre Tipo II  ·  Estándar ISBT 128]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="564" y="11" width="216" height="12" forecolor="#AEB6CF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[RPT-01  ·  REPORTE ESTÁTICO]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="564" y="24" width="216" height="16" forecolor="#FFFFFF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[new java.text.SimpleDateFormat("dd/MM/yyyy  HH:mm").format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="564" y="41" width="216" height="14" forecolor="#AEB6CF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA["Generado por: " + $P{USUARIO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="76" width="794" height="28" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="21" isBold="true"/></textElement>
+				<text><![CDATA[Listado general de donantes]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="104" width="794" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="8.5"/></textElement>
+				<textFieldExpression><![CDATA["Todos los donantes registrados, ordenados por apellido  ·  Reporte estático (sin filtros)"]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="0" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="1" y="134" width="4" height="38" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="16" y="132" width="165" height="26" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{TOTAL}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="16" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Donantes registrados]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="201" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="202" y="134" width="4" height="38" forecolor="#1E7F3C" backcolor="#1E7F3C"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="217" y="132" width="165" height="26" forecolor="#1E7F3C"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{APTOS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="217" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Aptos para donar]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="402" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="403" y="134" width="4" height="38" forecolor="#A9760A" backcolor="#A9760A"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="418" y="132" width="165" height="26" forecolor="#A9760A"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{DIFERIDOS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="418" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Diferidos]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="603" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="604" y="134" width="4" height="38" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="619" y="132" width="165" height="26" forecolor="#9E1B1B"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{DONACIONES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="619" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Donaciones acumuladas]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="30">
+				<printWhenExpression><![CDATA[$V{PAGE_NUMBER} > 1]]></printWhenExpression>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="24" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="12" y="0" width="770" height="24" forecolor="#FFFFFF"/>
+				<textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<text><![CDATA[BancoSangre HLEV  ·  Listado general de donantes]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="24" width="794" height="2" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="26">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="66" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[DNI]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="66" y="0" width="176" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[DONANTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="242" y="0" width="52" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[GRUPO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="294" y="0" width="36" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[SEXO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="330" y="0" width="80" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[TIPO DE DONACIÓN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="410" y="0" width="52" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[N° DON.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="462" y="0" width="82" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[ÚLTIMA DONACIÓN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="544" y="0" width="50" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[APTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="594" y="0" width="70" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[ESTADO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="664" y="0" width="130" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[CAMPAÑA]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22">
+			<rectangle>
+				<reportElement style="Fila" x="0" y="0" width="794" height="22"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<line>
+				<reportElement x="0" y="21" width="794" height="1" forecolor="#E3E6EB"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#E3E6EB"/></graphicElement>
+			</line>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="66" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{dni}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="66" y="0" width="176" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{donante}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="249" y="3" width="38" height="16" forecolor="#FBEAEA" backcolor="#FBEAEA">
+				<printWhenExpression><![CDATA[true]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="249" y="3" width="38" height="16" forecolor="#9E1B1B">
+				<printWhenExpression><![CDATA[true]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{grupo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="294" y="0" width="36" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{sexo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="330" y="0" width="80" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{tipo_donacion}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="410" y="0" width="52" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{total_donaciones}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="462" y="0" width="82" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{ultima_donacion}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="551" y="3" width="36" height="16" forecolor="#E9F6EC" backcolor="#E9F6EC">
+				<printWhenExpression><![CDATA["Sí".equals($F{apto})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="551" y="3" width="36" height="16" forecolor="#1E7F3C">
+				<printWhenExpression><![CDATA["Sí".equals($F{apto})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{apto}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="551" y="3" width="36" height="16" forecolor="#FBEAEA" backcolor="#FBEAEA">
+				<printWhenExpression><![CDATA[!"Sí".equals($F{apto})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="551" y="3" width="36" height="16" forecolor="#9E1B1B">
+				<printWhenExpression><![CDATA[!"Sí".equals($F{apto})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{apto}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="600" y="3" width="58" height="16" forecolor="#E9F6EC" backcolor="#E9F6EC">
+				<printWhenExpression><![CDATA["Activo".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="600" y="3" width="58" height="16" forecolor="#1E7F3C">
+				<printWhenExpression><![CDATA["Activo".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="600" y="3" width="58" height="16" forecolor="#FBF1DE" backcolor="#FBF1DE">
+				<printWhenExpression><![CDATA[!"Activo".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="600" y="3" width="58" height="16" forecolor="#A9760A">
+				<printWhenExpression><![CDATA[!"Activo".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="664" y="0" width="130" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{campana}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20">
+			<line>
+				<reportElement x="0" y="2" width="794" height="1" forecolor="#E3E6EB"/>
+			</line>
+			<textField>
+				<reportElement x="0" y="4" width="654" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="6.5"/></textElement>
+				<textFieldExpression><![CDATA["BancoSangre HLEV  ·  Documento generado automáticamente por " + $P{USUARIO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="654" y="4" width="100" height="14" forecolor="#5B6472"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER} + " de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="756" y="4" width="38" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="280">
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="0" y="4" width="794" height="38" forecolor="#F4F5F7" backcolor="#F4F5F7"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="14" y="7" width="766" height="16" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Total de donantes: " + $V{TOTAL} + "     Aptos: " + $V{APTOS} + "     No aptos: " + ($V{TOTAL} - $V{APTOS}) + "     Diferidos: " + $V{DIFERIDOS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="14" y="23" width="766" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7" isItalic="true"/></textElement>
+				<text><![CDATA[Fuente: tabla donantes (PostgreSQL). Se incluyen todos los registros, sin filtros.]]></text>
+			</staticText>
+		<barChart><chart evaluationTime="Report" isShowLegend="false"><reportElement x="0" y="52" width="794" height="220"/><chartTitle><font size="12" isBold="true"/><titleExpression><![CDATA["Resumen gráfico"]]></titleExpression></chartTitle><chartSubtitle/><chartLegend/></chart><categoryDataset><dataset incrementType="Report"/><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Donantes registrados"]]></categoryExpression><valueExpression><![CDATA[$V{TOTAL}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Aptos para donar"]]></categoryExpression><valueExpression><![CDATA[$V{APTOS}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Diferidos"]]></categoryExpression><valueExpression><![CDATA[$V{DIFERIDOS}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Donaciones acumuladas"]]></categoryExpression><valueExpression><![CDATA[$V{DONACIONES}]]></valueExpression></categorySeries></categoryDataset><barPlot isShowLabels="true"><plot orientation="Horizontal"><seriesColor seriesOrder="0" color="#16888C"/></plot><itemLabel color="#171D38"/><categoryAxisLabelExpression><![CDATA["Indicador"]]></categoryAxisLabelExpression><valueAxisLabelExpression><![CDATA["Cantidad"]]></valueAxisLabelExpression></barPlot></barChart>
+</band>
+	</summary>
+	<noData>
+		<band height="150">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="6" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="0" y="92" width="794" height="18" forecolor="#5B6472"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="9"/></textElement>
+				<textFieldExpression><![CDATA["Todos los donantes registrados, ordenados por apellido  ·  Reporte estático (sin filtros)"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="30" width="794" height="26" forecolor="#171D38"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="14" isBold="true"/></textElement>
+				<text><![CDATA[Listado general de donantes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="62" width="794" height="22" forecolor="#5B6472"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="10" isItalic="true"/></textElement>
+				<text><![CDATA[No se encontraron registros con los filtros indicados.]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>

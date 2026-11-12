@@ -9,6 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
   <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+  <link rel="stylesheet" th:href="@{/css/interfaz.css}"/>
+  <script defer th:src="@{/js/interfaz.js}"></script>
 </head>
 <body>
 
@@ -18,12 +20,14 @@
     <div class="login-left">
       <img class="login-logo" th:src="@{/img/logo-claro.svg}" width="56" height="56" alt="Logotipo del banco de sangre"/>
       <span class="login-badge">PRONAHEBAS · MINSA · DIGDOT</span>
-      <h1>Sistema Web de Gestión<br/>de Banco de Sangre</h1>
+      <h1>Cuidamos cada unidad.<br/>Conectamos vidas.</h1>
       <p>Hospital de Lima Este Vitarte — Servicio de Hemoterapia y Banco de Sangre.</p>
+      <img class="login-team-image" th:src="@{/img/hospital-vitarte.jpg}" width="600" height="300" alt="Fachada del Hospital de Lima Este–Vitarte" title="Stephaniedayana / Wikimedia Commons · CC BY-SA 4.0"/>
     </div>
     <div class="login-right">
       <form class="login-form" method="post" novalidate onsubmit="return validarLogin()" th:action="@{/login}">
         <h2>Iniciar sesión</h2>
+        <p class="sub">Bienvenido al banco de sangre. Ingresa con tu cuenta institucional para continuar.</p>
 
         <div th:if="${errorAcceso}" class="login-note" style="color:var(--red-700); font-weight:600;" th:text="${errorAcceso}"></div>
 
@@ -33,7 +37,10 @@
         </div>
         <div class="field">
           <label>Contraseña</label>
-          <input class="input" id="login-clave" data-val="clave" data-req="1" maxlength="40" autocomplete="current-password" type="password" name="clave" placeholder="••••••••••"/>
+          <div class="login-clave-control">
+            <input class="input" id="login-clave" data-val="clave" data-req="1" maxlength="40" autocomplete="current-password" type="password" name="clave" placeholder="••••••••••"/>
+            <button type="button" class="btn btn-ghost btn-sm" aria-controls="login-clave" onclick="alternarClave(this)">Mostrar</button>
+          </div>
         </div>
         <button class="btn btn-primary" type="submit" style="justify-content:center; padding:12px;">Ingresar</button>
         <div class="login-note">Acceso protegido · Ley N° 29733 de protección de datos personales</div>
@@ -42,8 +49,14 @@
   </div>
 </div>
 
-<script th:src="@{/js/validacion.js}"></script>
+<script th:src="@{/js/validacion.js(v=20261115)}"></script>
 <script>
+  function alternarClave(boton){
+    const clave = document.getElementById('login-clave');
+    const visible = clave.type === 'password';
+    clave.type = visible ? 'text' : 'password';
+    boton.textContent = visible ? 'Ocultar' : 'Mostrar';
+  }
   function validarLogin(){
     return VAL.formulario([
       ['login-usuario','usuarioLogin',{label:'Usuario'}],

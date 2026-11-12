@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- REPORTE DINAMICO: unidades por vencer (FEFO). Parametros: DIAS (entero), GRUPO_ABO (TODOS|A|B|AB|O). -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rpt_dinamico_unidades_por_vencer" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="794" leftMargin="24" rightMargin="24" topMargin="24" bottomMargin="24" whenNoDataType="NoDataSection" isSummaryWithPageHeaderAndFooter="true">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="BancoSangrePostgreSQL"/>
+	<style name="Base" isDefault="true" forecolor="#12161F" fontName="DejaVu Sans" fontSize="8"/>
+	<style name="Fila" mode="Opaque" backcolor="#FFFFFF">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT} % 2 == 0]]></conditionExpression>
+			<style mode="Opaque" backcolor="#F7F8FA"/>
+		</conditionalStyle>
+	</style>
+	<style name="Dias" forecolor="#12161F" isBold="true">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{dias_restantes} < 0]]></conditionExpression>
+			<style forecolor="#9E1B1B" isBold="true"/>
+		</conditionalStyle>
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$F{dias_restantes} >= 0 && $F{dias_restantes} <= 7]]></conditionExpression>
+			<style forecolor="#A9760A" isBold="true"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="LOGO" class="java.lang.String">
+		<parameterDescription><![CDATA[Ruta del logo (en la app: reportes/img/logo-reporte.png)]]></parameterDescription>
+		<defaultValueExpression><![CDATA["reports/img/logo-reporte.png"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="USUARIO" class="java.lang.String">
+		<parameterDescription><![CDATA[Usuario que genera el reporte]]></parameterDescription>
+		<defaultValueExpression><![CDATA["Sistema"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DIAS" class="java.lang.Integer">
+		<parameterDescription><![CDATA[Horizonte en dias (0 = solo vencidas hasta hoy)]]></parameterDescription>
+		<defaultValueExpression><![CDATA[Integer.valueOf(30)]]></defaultValueExpression>
+	</parameter>
+	<parameter name="GRUPO_ABO" class="java.lang.String">
+		<parameterDescription><![CDATA[TODOS, A, B, AB u O]]></parameterDescription>
+		<defaultValueExpression><![CDATA["TODOS"]]></defaultValueExpression>
+	</parameter>
+	<queryString language="SQL">
+		<![CDATA[SELECT u.din,
+       u.grupo_abo::text || CASE u.factor_rh WHEN 'positivo' THEN '+' ELSE '-' END AS grupo,
+       u.fecha_extraccion,
+       u.fecha_vencimiento,
+       (u.fecha_vencimiento - current_date) AS dias_restantes,
+       u.estado::text AS estado
+FROM unidades_sangre u
+WHERE u.estado::text NOT IN ('despachado', 'incinerado', 'fraccionado')
+  AND u.fecha_vencimiento <= current_date + $P{DIAS}
+  AND (CAST($P{GRUPO_ABO} AS text) = 'TODOS' OR u.grupo_abo::text = CAST($P{GRUPO_ABO} AS text))
+ORDER BY u.fecha_vencimiento, u.din]]>
+	</queryString>
+	<field name="din" class="java.lang.String"/>
+	<field name="grupo" class="java.lang.String"/>
+	<field name="fecha_extraccion" class="java.sql.Timestamp"/>
+	<field name="fecha_vencimiento" class="java.sql.Date"/>
+	<field name="dias_restantes" class="java.lang.Integer"/>
+	<field name="estado" class="java.lang.String"/>
+	<variable name="TOTAL" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[1]]></variableExpression>
+	</variable>
+	<variable name="VENCIDAS" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{dias_restantes} < 0 ? 1 : 0]]></variableExpression>
+	</variable>
+	<variable name="CRITICAS" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[($F{dias_restantes} >= 0 && $F{dias_restantes} <= 7) ? 1 : 0]]></variableExpression>
+	</variable>
+	<variable name="VIGENTES" class="java.lang.Integer" calculation="Sum">
+		<variableExpression><![CDATA[$F{dias_restantes} > 7 ? 1 : 0]]></variableExpression>
+	</variable>
+	<title>
+		<band height="188">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="64" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="64" width="794" height="3" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<image onErrorType="Blank">
+				<reportElement x="14" y="9" width="46" height="46"/>
+				<imageExpression><![CDATA[$P{LOGO}]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="72" y="11" width="420" height="22" forecolor="#FFFFFF"/>
+				<textElement verticalAlignment="Middle"><font size="15" isBold="true"/></textElement>
+				<text><![CDATA[BancoSangre HLEV]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="72" y="33" width="470" height="16" forecolor="#AEB6CF"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Hospital de Lima Este Vitarte  ·  Banco de Sangre Tipo II  ·  Estándar ISBT 128]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="564" y="11" width="216" height="12" forecolor="#AEB6CF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[RPT-03  ·  REPORTE DINÁMICO]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="564" y="24" width="216" height="16" forecolor="#FFFFFF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[new java.text.SimpleDateFormat("dd/MM/yyyy  HH:mm").format(new java.util.Date())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="564" y="41" width="216" height="14" forecolor="#AEB6CF"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA["Generado por: " + $P{USUARIO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="76" width="794" height="28" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="21" isBold="true"/></textElement>
+				<text><![CDATA[Unidades de sangre por vencer (FEFO)]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="104" width="794" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="8.5"/></textElement>
+				<textFieldExpression><![CDATA["Vencen hasta " + $P{DIAS} + " días desde hoy (incluye ya vencidas)     ·     Grupo ABO: " + ("TODOS".equals($P{GRUPO_ABO}) ? "Todos" : $P{GRUPO_ABO})]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="0" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="1" y="134" width="4" height="38" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="16" y="132" width="165" height="26" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{TOTAL}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="16" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Unidades en el reporte]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="201" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="202" y="134" width="4" height="38" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="217" y="132" width="165" height="26" forecolor="#9E1B1B"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{VENCIDAS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="217" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Ya vencidas (retirar)]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="402" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="403" y="134" width="4" height="38" forecolor="#A9760A" backcolor="#A9760A"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="418" y="132" width="165" height="26" forecolor="#A9760A"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{CRITICAS}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="418" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Críticas (vencen en ≤ 7 días)]]></text>
+			</staticText>
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="603" y="126" width="189" height="54" forecolor="#E3E6EB" backcolor="#FFFFFF"/>
+				<graphicElement><pen lineWidth="0.75" lineColor="#E3E6EB"/></graphicElement>
+			</rectangle>
+			<rectangle>
+				<reportElement mode="Opaque" x="604" y="134" width="4" height="38" forecolor="#1E7F3C" backcolor="#1E7F3C"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField evaluationTime="Report">
+				<reportElement x="619" y="132" width="165" height="26" forecolor="#1E7F3C"/>
+				<textElement verticalAlignment="Middle"><font size="19" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{VIGENTES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="619" y="158" width="165" height="16" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<text><![CDATA[Por vencer (más de 7 días)]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="30">
+				<printWhenExpression><![CDATA[$V{PAGE_NUMBER} > 1]]></printWhenExpression>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="24" forecolor="#171D38" backcolor="#171D38"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="12" y="0" width="770" height="24" forecolor="#FFFFFF"/>
+				<textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<text><![CDATA[BancoSangre HLEV  ·  Unidades de sangre por vencer (FEFO)]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="24" width="794" height="2" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="26">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="130" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[DIN (ISBT 128)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="130" y="0" width="56" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[GRUPO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="186" y="0" width="104" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[EXTRACCIÓN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="290" y="0" width="84" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[VENCIMIENTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="374" y="0" width="76" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[DÍAS RESTANTES]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="450" y="0" width="96" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[ESTADO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="546" y="0" width="248" height="26" forecolor="#FFFFFF" backcolor="#171D38"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<text><![CDATA[ALERTA]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="22">
+			<rectangle>
+				<reportElement style="Fila" x="0" y="0" width="794" height="22"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<line>
+				<reportElement x="0" y="21" width="794" height="1" forecolor="#E3E6EB"/>
+				<graphicElement><pen lineWidth="0.5" lineColor="#E3E6EB"/></graphicElement>
+			</line>
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="130" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"><font size="7.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{din}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="138" y="3" width="40" height="16" forecolor="#FBEAEA" backcolor="#FBEAEA">
+				<printWhenExpression><![CDATA[true]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="138" y="3" width="40" height="16" forecolor="#9E1B1B">
+				<printWhenExpression><![CDATA[true]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{grupo}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy HH:mm" isBlankWhenNull="true">
+				<reportElement x="186" y="0" width="104" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{fecha_extraccion}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="290" y="0" width="84" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{fecha_vencimiento}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement style="Dias" x="374" y="0" width="76" height="22"/>
+				<box leftPadding="6" rightPadding="6"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7.5"/></textElement>
+				<textFieldExpression><![CDATA[$F{dias_restantes}]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#E9F6EC" backcolor="#E9F6EC">
+				<printWhenExpression><![CDATA["disponible".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#1E7F3C">
+				<printWhenExpression><![CDATA["disponible".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#E9F0FB" backcolor="#E9F0FB">
+				<printWhenExpression><![CDATA["reservado".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#1849A9">
+				<printWhenExpression><![CDATA["reservado".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#FBF1DE" backcolor="#FBF1DE">
+				<printWhenExpression><![CDATA["cuarentena".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#A9760A">
+				<printWhenExpression><![CDATA["cuarentena".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#FBEAEA" backcolor="#FBEAEA">
+				<printWhenExpression><![CDATA[!"disponible".equals($F{estado}) && !"reservado".equals($F{estado}) && !"cuarentena".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="456" y="3" width="84" height="16" forecolor="#9E1B1B">
+				<printWhenExpression><![CDATA[!"disponible".equals($F{estado}) && !"reservado".equals($F{estado}) && !"cuarentena".equals($F{estado})]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{estado}.toUpperCase()]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="586" y="3" width="168" height="16" forecolor="#9E1B1B" backcolor="#9E1B1B">
+				<printWhenExpression><![CDATA[$F{dias_restantes} < 0]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="586" y="3" width="168" height="16" forecolor="#FFFFFF">
+				<printWhenExpression><![CDATA[$F{dias_restantes} < 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["VENCIDA HACE " + (-$F{dias_restantes}) + (-$F{dias_restantes} == 1 ? " DÍA" : " DÍAS")]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="586" y="3" width="168" height="16" forecolor="#FBF1DE" backcolor="#FBF1DE">
+				<printWhenExpression><![CDATA[$F{dias_restantes} >= 0 && $F{dias_restantes} <= 7]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="586" y="3" width="168" height="16" forecolor="#A9760A">
+				<printWhenExpression><![CDATA[$F{dias_restantes} >= 0 && $F{dias_restantes} <= 7]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$F{dias_restantes} == 0 ? "CRÍTICA: VENCE HOY" : "CRÍTICA: VENCE EN " + $F{dias_restantes} + ($F{dias_restantes} == 1 ? " DÍA" : " DÍAS")]]></textFieldExpression>
+			</textField>
+			<rectangle radius="8">
+				<reportElement x="586" y="3" width="168" height="16" forecolor="#E9F6EC" backcolor="#E9F6EC">
+				<printWhenExpression><![CDATA[$F{dias_restantes} > 7]]></printWhenExpression>
+				</reportElement>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="586" y="3" width="168" height="16" forecolor="#1E7F3C">
+				<printWhenExpression><![CDATA[$F{dias_restantes} > 7]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="6.5" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["VIGENTE (" + $F{dias_restantes} + " DÍAS)"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20">
+			<line>
+				<reportElement x="0" y="2" width="794" height="1" forecolor="#E3E6EB"/>
+			</line>
+			<textField>
+				<reportElement x="0" y="4" width="654" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="6.5"/></textElement>
+				<textFieldExpression><![CDATA["BancoSangre HLEV  ·  Documento generado automáticamente por " + $P{USUARIO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="654" y="4" width="100" height="14" forecolor="#5B6472"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Página " + $V{PAGE_NUMBER} + " de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="756" y="4" width="38" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="280">
+			<rectangle radius="8">
+				<reportElement mode="Opaque" x="0" y="4" width="794" height="38" forecolor="#F4F5F7" backcolor="#F4F5F7"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="14" y="7" width="766" height="16" forecolor="#171D38"/>
+				<textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+				<textFieldExpression><![CDATA["Unidades: " + $V{TOTAL} + "     Vencidas: " + $V{VENCIDAS} + "     Críticas (≤ 7 días): " + $V{CRITICAS} + "     Por vencer: " + $V{VIGENTES}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="14" y="23" width="766" height="14" forecolor="#5B6472"/>
+				<textElement verticalAlignment="Middle"><font size="7" isItalic="true"/></textElement>
+				<text><![CDATA[Orden FEFO: primero en vencer, primero en salir. Se excluyen unidades despachadas, fraccionadas o incineradas.]]></text>
+			</staticText>
+		<barChart><chart evaluationTime="Report" isShowLegend="false"><reportElement x="0" y="52" width="794" height="220"/><chartTitle><font size="12" isBold="true"/><titleExpression><![CDATA["Resumen gráfico"]]></titleExpression></chartTitle><chartSubtitle/><chartLegend/></chart><categoryDataset><dataset incrementType="Report"/><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Unidades en el reporte"]]></categoryExpression><valueExpression><![CDATA[$V{TOTAL}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Ya vencidas (retirar)"]]></categoryExpression><valueExpression><![CDATA[$V{VENCIDAS}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Críticas (vencen en ≤ 7 días)"]]></categoryExpression><valueExpression><![CDATA[$V{CRITICAS}]]></valueExpression></categorySeries><categorySeries><seriesExpression><![CDATA["Cantidad"]]></seriesExpression><categoryExpression><![CDATA["Por vencer (más de 7 días)"]]></categoryExpression><valueExpression><![CDATA[$V{VIGENTES}]]></valueExpression></categorySeries></categoryDataset><barPlot isShowLabels="true"><plot orientation="Horizontal"><seriesColor seriesOrder="0" color="#16888C"/></plot><itemLabel color="#171D38"/><categoryAxisLabelExpression><![CDATA["Indicador"]]></categoryAxisLabelExpression><valueAxisLabelExpression><![CDATA["Cantidad"]]></valueAxisLabelExpression></barPlot></barChart>
+</band>
+	</summary>
+	<noData>
+		<band height="150">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="794" height="6" forecolor="#9E1B1B" backcolor="#9E1B1B"/>
+				<graphicElement><pen lineWidth="0"/></graphicElement>
+			</rectangle>
+			<textField>
+				<reportElement x="0" y="92" width="794" height="18" forecolor="#5B6472"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="9"/></textElement>
+				<textFieldExpression><![CDATA["Vencen hasta " + $P{DIAS} + " días desde hoy (incluye ya vencidas)     ·     Grupo ABO: " + ("TODOS".equals($P{GRUPO_ABO}) ? "Todos" : $P{GRUPO_ABO})]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="30" width="794" height="26" forecolor="#171D38"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="14" isBold="true"/></textElement>
+				<text><![CDATA[Unidades de sangre por vencer (FEFO)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="62" width="794" height="22" forecolor="#5B6472"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"><font size="10" isItalic="true"/></textElement>
+				<text><![CDATA[No se encontraron registros con los filtros indicados.]]></text>
+			</staticText>
+		</band>
+	</noData>
+</jasperReport>

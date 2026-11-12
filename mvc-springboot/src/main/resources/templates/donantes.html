@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head(titulo=${info.titulo()})}"></head>
 <body>
@@ -18,6 +18,7 @@
             <div class="card-desc">Personas registradas en el banco de sangre y su situación actual</div></div>
             <div style="display:flex; gap:8px;">
               <input class="input btn-sm" style="width:190px;" id="don-buscar" data-val="buscar" maxlength="40" autocomplete="off" placeholder="Buscar nombre o DNI..." oninput="renderDonantes()">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="window.open('/api/reportes/donantes.pdf', '_blank')">Reporte PDF</button>
               <button class="btn btn-primary btn-sm" onclick="switchTab('donantes','donantes:ficha')">+ Nuevo donante</button>
             </div>
           </div>
@@ -33,13 +34,14 @@
           <div class="card-desc">Datos personales y evaluación previa a la donación</div></div></div>
           <div class="grid-2" style="margin-bottom:14px;">
             <div class="field"><label>Nombres y apellidos</label><input class="input" id="don-nombre" data-val="nombre" data-req="1" maxlength="60" autocomplete="off" placeholder="Ej. María Fernanda Quispe Rojas"></div>
-            <div class="field"><label>DNI</label><input class="input" id="don-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="8 dígitos, ej. 45678912"></div>
+            <div class="field"><label>DNI</label><input class="input" id="don-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="8 dígitos, ej. 45678912"><div class="field-hint" id="don-reniec-estado" aria-live="polite"></div></div>
             <div class="field"><label>Fecha de nacimiento</label><input class="input" id="don-fecnac" data-val="fechaNacimiento" data-req="1" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="dd/mm/aaaa"></div>
             <div class="field"><label>Sexo</label><select class="input" id="don-sexo" data-val="seleccion" data-req="1"><option value="">Selecciona</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div>
             <div class="field"><label>Teléfono</label><input class="input" id="don-telefono" data-val="telefono" data-req="1" inputmode="numeric" maxlength="9" autocomplete="off" placeholder="9 dígitos, ej. 987654321"></div>
             <div class="field"><label>Correo electrónico</label><input class="input" id="don-correo" data-val="correoPersonal" data-req="1" maxlength="80" autocomplete="off" placeholder="ejemplo@correo.com"></div>
             <div class="field"><label>Dirección</label><input class="input" id="don-direccion" data-val="texto" data-req="1" data-min="5" data-max="150" maxlength="150" autocomplete="off" placeholder="Calle, número y distrito"></div>
             <div class="field"><label>Peso (kg)</label><input class="input" id="don-peso" data-val="peso" data-req="1" type="text" inputmode="decimal" maxlength="5" autocomplete="off" placeholder="62" oninput="evaluarAptitud()"></div>
+            <div class="field"><label for="don-altura">Altura (cm)</label><input class="input" id="don-altura" data-val="altura" data-req="1" type="text" inputmode="numeric" maxlength="3" placeholder="170" oninput="evaluarAptitud()"></div>
             <div class="field"><label>Hemoglobina (g/dL)</label><input class="input" id="don-hb" data-val="hemoglobina" data-req="1" type="text" inputmode="decimal" maxlength="4" autocomplete="off" placeholder="13.4" oninput="evaluarAptitud()"></div>
             <div class="field"><label>Grupo sanguíneo declarado</label><select class="input" id="don-abo"><option value="">Por confirmar en laboratorio</option><option>O POS</option><option>O NEG</option><option>A POS</option><option>A NEG</option><option>B POS</option><option>B NEG</option><option>AB POS</option><option>AB NEG</option></select></div>
             <div class="field">
@@ -56,6 +58,10 @@
                 <option value="">— Ninguna (donación directa) —</option>
                 <option value="utp">Dona Vida UTP 2026-II</option>
                 <option value="ate">Empresas Solidarias ATE</option>
+                <option value="vitarte">Vitarte Dona Vida</option>
+                <option value="santa-anita">Santa Anita Solidaria</option>
+                <option value="chaclacayo">Chaclacayo Dona Sangre</option>
+                <option value="familias-hlev">Familias Donantes HLEV</option>
               </select>
             </div>
           </div>
@@ -68,7 +74,8 @@
             <label for="don-consentimiento" style="font-weight:400;">El donante firmó digitalmente el consentimiento informado previo a la extracción</label>
           </div>
           <div style="display:flex; align-items:center; justify-content:space-between;">
-            <span class="pill green" id="aptitud-pill"><span class="dot"></span>Evaluación: APTO para donar</span>
+            <span class="pill slate" id="aptitud-pill" role="status">Pendiente de evaluación</span>
+            <label class="checkline"><input type="checkbox" id="don-evaluado" onchange="evaluarAptitud()"> El profesional confirma la aptitud tras la evaluación clínica</label>
             <button class="btn btn-primary btn-sm" onclick="registrarDonante()">Registrar donante</button>
           </div>
         </div>
@@ -99,6 +106,11 @@
           <div id="serologia-alert"></div>
           <div class="divider" style="margin:20px 0;"></div>
           <div class="card-title" style="margin-bottom:10px;">Tamizajes registrados</div>
+          <div class="field" style="max-width:340px; margin-bottom:14px;">
+            <label for="tamizajes-buscar">Buscar por DIN o donante</label>
+            <input class="input" id="tamizajes-buscar" type="search" oninput="renderTamizajes()">
+          </div>
+          <p id="tamizajes-total" class="cell-muted" role="status"></p>
           <table>
             <thead><tr><th>Unidad (DIN)</th><th>Donante</th><th>Resultado</th><th>Registrado por</th></tr></thead>
             <tbody id="tamizajes-rows"></tbody>
@@ -110,9 +122,13 @@
           <div class="card-desc">Universidades, empresas e instituciones — metas y resultados</div></div></div>
           <table>
             <thead><tr><th>Campaña</th><th>Institución</th><th>Meta</th><th>Captados</th><th>Avance</th></tr></thead>
-            <tbody>
-              <tr><td class="cell-strong">Dona Vida UTP 2026-II</td><td class="cell-muted">Universidad Tecnológica del Perú</td><td class="mono">150</td><td class="mono">98</td><td style="width:160px;"><div class="progress-track"><div class="progress-fill" style="width:65%; background:var(--green-700);"></div></div></td></tr>
-              <tr><td class="cell-strong">Empresas Solidarias ATE</td><td class="cell-muted">Consorcio industrial ATE-Vitarte</td><td class="mono">80</td><td class="mono">34</td><td style="width:160px;"><div class="progress-track"><div class="progress-fill" style="width:42%; background:var(--amber-700);"></div></div></td></tr>
+            <tbody id="campanas-rows">
+              <tr data-meta="150"><td class="cell-strong">Dona Vida UTP 2026-II</td><td>Universidad Tecnológica del Perú</td></tr>
+              <tr data-meta="80"><td class="cell-strong">Empresas Solidarias ATE</td><td>Consorcio industrial ATE-Vitarte</td></tr>
+              <tr data-meta="100"><td class="cell-strong">Vitarte Dona Vida</td><td>Vitarte</td></tr>
+              <tr data-meta="75"><td class="cell-strong">Santa Anita Solidaria</td><td>Santa Anita</td></tr>
+              <tr data-meta="60"><td class="cell-strong">Chaclacayo Dona Sangre</td><td>Chaclacayo</td></tr>
+              <tr data-meta="120"><td class="cell-strong">Familias Donantes HLEV</td><td>Hospital de Lima Este Vitarte</td></tr>
             </tbody>
           </table>
         </div>
@@ -126,7 +142,46 @@
     sincronizarLocal('donantes', 'inventory', 'serologia');
     document.addEventListener('DOMContentLoaded', function() {
       renderDonantes(); renderDiferimientos(); fillSerologiaSelect();
+      configurarConsultaReniec();
     });
+
+    function configurarConsultaReniec() {
+      const dni = document.getElementById('don-dni');
+      const nombre = document.getElementById('don-nombre');
+      const estado = document.getElementById('don-reniec-estado');
+      let consulta = 0;
+      dni.addEventListener('input', async function() {
+        const actual = ++consulta;
+        estado.textContent = '';
+        estado.className = 'field-hint';
+        if (nombre.dataset.reniec === '1') {
+          nombre.value = '';
+          nombre.readOnly = false;
+          delete nombre.dataset.reniec;
+          VAL.limpiar(['don-nombre']);
+        }
+        if (!/^\d{8}$/.test(dni.value)) return;
+        estado.textContent = 'Consultando RENIEC…';
+        try {
+          const respuesta = await fetch('/api/reniec/' + dni.value, {headers:{Accept:'application/json'}});
+          const datos = await respuesta.json();
+          if (actual !== consulta) return;
+          if (!respuesta.ok) throw new Error(datos.error || 'No se pudo verificar el DNI');
+          nombre.value = datos.nombre;
+          nombre.dataset.reniec = '1';
+          nombre.readOnly = true;
+          nombre.dispatchEvent(new Event('input', {bubbles:true}));
+          nombre.dispatchEvent(new Event('change', {bubbles:true}));
+          VAL.campo(nombre, 'nombre');
+          estado.textContent = 'DNI verificado con RENIEC';
+          estado.className = 'field-hint reniec-ok';
+        } catch (error) {
+          if (actual !== consulta) return;
+          estado.textContent = error.message;
+          estado.className = 'field-hint reniec-error';
+        }
+      });
+    }
   </script>
 </body>
 </html>

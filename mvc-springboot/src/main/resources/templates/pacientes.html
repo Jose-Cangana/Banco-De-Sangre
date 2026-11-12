@@ -6,7 +6,7 @@
   <section>
         <div class="tabs">
           <button class="tab active" data-tab="pacientes:lista">Pacientes registrados</button>
-          <button class="tab" data-tab="pacientes:nuevo">Registrar paciente</button>
+          <button class="tab" data-tab="pacientes:nuevo" onclick="prepararPaciente()">Registrar paciente</button>
         </div>
 
         <div data-tabpanel="pacientes:lista" class="card">
@@ -15,7 +15,7 @@
             <div class="card-desc">Receptores de sangre registrados y el estado de su última solicitud</div></div>
             <div style="display:flex; gap:8px;">
               <input class="input btn-sm" style="width:220px;" id="pac-buscar" data-val="buscar" maxlength="40" autocomplete="off" placeholder="Buscar nombre, DNI o historia..." oninput="filtrarPacientes()">
-              <button class="btn btn-primary btn-sm" onclick="switchTab('pacientes','pacientes:nuevo')">+ Nuevo paciente</button>
+              <button class="btn btn-primary btn-sm" onclick="location.href='/pacientes?nuevo=true'">+ Nuevo paciente</button>
             </div>
           </div>
           <table>
@@ -40,18 +40,21 @@
           <div class="card-desc">Si la historia clínica ya existe, se actualizan sus datos. Todos los campos son obligatorios, salvo el grupo sanguíneo si aún no está confirmado</div></div></div>
           <div class="grid-2" style="margin-bottom:14px;">
             <div class="field"><label>Nombres y apellidos</label><input class="input" id="pac-nombre" data-val="nombre" data-req="1" maxlength="60" autocomplete="off" placeholder="Nombres y apellidos del paciente"></div>
-            <div class="field"><label>DNI</label><input class="input mono" id="pac-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="8 dígitos"></div>
+            <div class="field"><label>DNI</label><input class="input mono" id="pac-dni" data-val="dni" data-req="1" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="8 dígitos"><div class="field-hint" id="pac-reniec-estado" aria-live="polite"></div></div>
             <div class="field"><label>Historia clínica</label><input class="input mono" id="pac-hc" data-val="hc" data-req="1" maxlength="13" autocomplete="off" placeholder="HC-2026-00000"></div>
-            <div class="field"><label>Fecha de nacimiento</label><input class="input" id="pac-fecnac" data-val="fechaNacimiento" data-req="1" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="dd/mm/aaaa"></div>
+            <div class="field"><label>Fecha de nacimiento</label><input class="input" id="pac-fecnac" data-val="fechaNacimientoPaciente" data-req="1" type="date" autocomplete="off"></div>
             <div class="field"><label>Sexo</label><select class="input" id="pac-sexo" data-val="seleccion" data-req="1"><option value="">Selecciona</option><option value="M">Masculino</option><option value="F">Femenino</option></select></div>
             <div class="field"><label>Teléfono</label><input class="input" id="pac-telefono" data-val="telefono" data-req="1" inputmode="numeric" maxlength="9" autocomplete="off" placeholder="9 dígitos, ej. 987654321"></div>
             <div class="field"><label>Correo electrónico</label><input class="input" id="pac-correo" data-val="correoPersonal" data-req="1" maxlength="80" autocomplete="off" placeholder="ejemplo@correo.com"></div>
             <div class="field"><label>Dirección</label><input class="input" id="pac-direccion" data-val="texto" data-req="1" data-min="5" data-max="150" maxlength="150" autocomplete="off" placeholder="Calle, número y distrito"></div>
             <div class="field"><label>Peso (kg)</label><input class="input" id="pac-peso" data-val="pesoPaciente" data-req="1" type="text" inputmode="decimal" maxlength="5" autocomplete="off" placeholder="70"></div>
+            <div class="field"><label>Altura (cm)</label><input class="input" id="pac-altura" data-val="altura" data-req="1" type="text" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="170"></div>
             <div class="field"><label>Hemoglobina (g/dL)</label><input class="input" id="pac-hb" data-val="hemoglobina" data-req="1" type="text" inputmode="decimal" maxlength="4" autocomplete="off" placeholder="8.5"></div>
             <div class="field"><label>Grupo sanguíneo declarado</label><select class="input" id="pac-abo"><option value="">Por confirmar en laboratorio</option><option>O POS</option><option>O NEG</option><option>A POS</option><option>A NEG</option><option>B POS</option><option>B NEG</option><option>AB POS</option><option>AB NEG</option></select></div>
           </div>
+          <p><a href="https://sel.migraciones.gob.pe/servmig-valreg/VerificarCE" target="_blank" rel="noopener noreferrer">Verificar Carné de Extranjería en Migraciones</a></p>
           <button class="btn btn-primary" onclick="guardarPaciente()">Guardar paciente</button>
+          <p id="pac-guardado" role="status"></p>
         </div>
   </section>
 </div>
@@ -69,40 +72,122 @@
       document.getElementById('pac-count').textContent = visibles + ' paciente(s)';
     }
     function guardarPaciente(){
+      const boton = document.querySelector('[onclick="guardarPaciente()"]');
+      if (boton.disabled) return;
       if (!VAL.formulario([
         ['pac-nombre','nombre',{label:'Nombres y apellidos'}],
         ['pac-dni','dni',{label:'DNI'}],
         ['pac-hc','hc',{label:'Historia clínica'}],
-        ['pac-fecnac','fechaNacimiento',{label:'Fecha de nacimiento'}],
+        ['pac-fecnac','fechaNacimientoPaciente',{label:'Fecha de nacimiento'}],
         ['pac-sexo','seleccion',{label:'Sexo'}],
         ['pac-telefono','telefono',{label:'Teléfono'}],
         ['pac-correo','correoPersonal',{label:'Correo electrónico'}],
         ['pac-direccion','texto',{label:'Dirección'}],
         ['pac-peso','pesoPaciente',{label:'Peso'}],
+        ['pac-altura','altura',{label:'Altura'}],
         ['pac-hb','hemoglobina',{label:'Hemoglobina'}]
       ])) return;
       const v = id => document.getElementById(id).value.trim();
       const nombre = document.getElementById('pac-nombre').value.trim();
       const dni = document.getElementById('pac-dni').value.trim();
       const hc = document.getElementById('pac-hc').value.trim().toUpperCase();
+      const fechaServidor = fecha => { const p = fecha.split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : fecha; };
+      boton.disabled = true;
       fetch('/api/sincronizar', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pacientes: [{ paciente: nombre, dni: dni, hc: hc, fechaNacimiento: v('pac-fecnac'), sexo: v('pac-sexo'),
-                        abo: v('pac-abo'), pesoKg: parseFloat(v('pac-peso').replace(',', '.')), hemoglobina: parseFloat(v('pac-hb').replace(',', '.')),
+          pacientes: [{ paciente: nombre, dni: dni, hc: hc, fechaNacimiento: fechaServidor(v('pac-fecnac')), sexo: v('pac-sexo'),
+                        abo: v('pac-abo'), pesoKg: parseFloat(v('pac-peso').replace(',', '.')), alturaCm: parseFloat(v('pac-altura')), hemoglobina: parseFloat(v('pac-hb').replace(',', '.')),
                         telefono: v('pac-telefono'), correo: v('pac-correo'), direccion: v('pac-direccion') }],
           auditNuevos: [{ usuario: PAC_USUARIO, accion: 'Registró paciente', recurso: hc, ip: '—' }]
         })
       }).then(r => r.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor' })))
-        .then(res => {
+        .then(async res => {
           if (!res.ok) { toast(res.error || 'No se pudo guardar el paciente', true); return; }
           toast('Paciente guardado');
-          setTimeout(() => location.reload(), 600);
+          if (new URLSearchParams(location.search).get('nuevo') === 'true') {
+            document.getElementById('pac-guardado').textContent = 'Historia ' + hc + ' guardada. Vuelve a Solicitudes y busca por DNI o historia clínica.';
+          } else {
+            document.getElementById('pac-guardado').textContent = 'Historia ' + hc + ' guardada.';
+          }
+          const campos = [...document.querySelectorAll('[data-tabpanel="pacientes:nuevo"] input, [data-tabpanel="pacientes:nuevo"] select')];
+          campos.forEach(campo => { campo.value = ''; });
+          // Cancela cualquier consulta RENIEC pendiente y libera el campo de nombre.
+          document.getElementById('pac-dni').dispatchEvent(new Event('input', {bubbles:true}));
+          VAL.limpiar(campos.map(campo => campo.id));
+          await prepararPaciente();
         })
-        .catch(() => toast('No se pudo conectar con el servidor', true));
+        .catch(() => toast('No se pudo conectar con el servidor', true))
+        .finally(() => { boton.disabled = !document.getElementById('pac-hc').value; });
     }
     document.addEventListener('DOMContentLoaded', filtrarPacientes);
+    document.addEventListener('DOMContentLoaded', configurarReniecPaciente);
+
+    function configurarReniecPaciente() {
+      const dni = document.getElementById('pac-dni');
+      const nombre = document.getElementById('pac-nombre');
+      const direccion = document.getElementById('pac-direccion');
+      const estado = document.getElementById('pac-reniec-estado');
+      let consulta = 0;
+      dni.addEventListener('input', async () => {
+        const actual = ++consulta;
+        estado.textContent = '';
+        estado.className = 'field-hint';
+        if (nombre.dataset.reniec === '1') {
+          nombre.value = '';
+          nombre.readOnly = false;
+          delete nombre.dataset.reniec;
+          VAL.limpiar(['pac-nombre']);
+        }
+        if (!/^\d{8}$/.test(dni.value)) return;
+        estado.textContent = 'Consultando RENIEC…';
+        try {
+          const respuesta = await fetch('/api/reniec/' + dni.value, {headers:{Accept:'application/json'}});
+          const datos = await respuesta.json();
+          if (actual !== consulta) return;
+          if (!respuesta.ok) throw new Error(datos.error || 'No se pudo verificar el DNI');
+          nombre.value = datos.nombre;
+          nombre.dataset.reniec = '1';
+          nombre.readOnly = true;
+          nombre.dispatchEvent(new Event('input', {bubbles:true}));
+          if (datos.direccion && !direccion.value.trim()) {
+            direccion.value = datos.direccion;
+            direccion.dispatchEvent(new Event('input', {bubbles:true}));
+          }
+          estado.textContent = 'DNI verificado con RENIEC';
+          estado.className = 'field-hint reniec-ok';
+        } catch (error) {
+          if (actual !== consulta) return;
+          estado.textContent = error.message;
+          estado.className = 'field-hint reniec-error';
+        }
+      });
+    }
+    let reservandoHistoria = false;
+    async function prepararPaciente() {
+      const campo = document.getElementById('pac-hc');
+      if (campo.value || reservandoHistoria) return;
+      const boton = document.querySelector('[onclick="guardarPaciente()"]');
+      reservandoHistoria = true;
+      campo.readOnly = true;
+      boton.disabled = true;
+      try {
+        const respuesta = await fetch('/api/pacientes/reservar-historia', {method:'POST'});
+        if (!respuesta.ok) throw new Error();
+        campo.value = (await respuesta.json()).hc;
+        campo.dispatchEvent(new Event('input', {bubbles:true}));
+        boton.disabled = false;
+        document.getElementById('pac-nombre').focus();
+      } catch {
+        toast('No se pudo generar la historia clínica. Vuelve a seleccionar Registrar paciente para reintentar.', true);
+      } finally {
+        reservandoHistoria = false;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      if (new URLSearchParams(location.search).get('nuevo') === 'true') switchTab('pacientes','pacientes:nuevo');
+    });
   </script>
 </body>
 </html>
